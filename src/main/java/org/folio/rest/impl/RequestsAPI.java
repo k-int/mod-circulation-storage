@@ -6,6 +6,10 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.folio.rest.impl.support.LogAssistant;
+import org.folio.rest.impl.support.PostgresRepository;
+import org.folio.rest.impl.support.Repository;
+import org.folio.rest.impl.support.SimpleLogAssistant;
 import org.folio.rest.jaxrs.model.Request;
 import org.folio.rest.jaxrs.model.Requests;
 import org.folio.rest.jaxrs.resource.LoanPolicyStorageResource;
@@ -31,7 +35,18 @@ public class RequestsAPI implements RequestStorageResource {
 
   private static final Logger log = LoggerFactory.getLogger(RequestsAPI.class);
 
+  private final LogAssistant logAssistant;
+  private final Repository repository;
   private final String REQUEST_TABLE = "request";
+
+  public RequestsAPI() {
+    this(new SimpleLogAssistant(), new PostgresRepository());
+  }
+
+  public RequestsAPI(LogAssistant logAssistant, Repository repository) {
+    this.logAssistant = logAssistant;
+    this.repository = repository;
+  }
 
   @Override
   public void deleteRequestStorageRequests(
@@ -43,38 +58,17 @@ public class RequestsAPI implements RequestStorageResource {
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
     vertxContext.runOnContext(v -> {
-      try {
-        PostgresClient postgresClient = PostgresClient.getInstance(
-          vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
-
-        postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.%s",
-          tenantId, "mod_circulation_storage", REQUEST_TABLE),
-          reply -> {
-            try {
-              if(reply.succeeded()) {
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                  DeleteRequestStorageRequestsResponse.withNoContent()));
-              }
-              else {
-                log.error(reply.cause().getMessage(), reply.cause());
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                  DeleteRequestStorageRequestsResponse
-                    .withPlainInternalServerError(reply.cause().getMessage())));
-              }
-            } catch (Exception e) {
-              log.error(e.getMessage(), e);
-              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                DeleteRequestStorageRequestsResponse
-                  .withPlainInternalServerError(e.getMessage())));
-            }
-          });
-      }
-      catch(Exception e) {
-        log.error(e.getMessage(), e);
-        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-          DeleteRequestStorageRequestsResponse
-            .withPlainInternalServerError(e.getMessage())));
-      }
+      repository.delete(tenantId, vertxContext,
+        nothing -> {
+          asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+            DeleteRequestStorageRequestsResponse.withNoContent()));
+        },
+        t -> {
+          logAssistant.log(log, t);
+          asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+            DeleteRequestStorageRequestsResponse
+              .withPlainInternalServerError(t.getMessage())));
+        });
     });
   }
 
