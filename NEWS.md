@@ -1,3 +1,7 @@
+## 4.0.0 Unreleased
+
+* Allow only one open loan per item (CIRCSTORE-19)
+
 ## 3.3.0 Unreleased
 
 * Allows requests to be searched and sorted via CQL (CIRCSTORE-22)
