@@ -46,31 +46,25 @@ public class RequestsAPI implements RequestStorageResource {
 
     vertxContext.runOnContext(v -> {
       try {
-        PostgresClient postgresClient = PostgresClient.getInstance(
-          vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
-
-        postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.%s",
-          tenantId, "mod_circulation_storage", REQUEST_TABLE),
-          reply -> {
-            try {
-              if(reply.succeeded()) {
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                  DeleteRequestStorageRequestsResponse.withNoContent()));
-              }
-              else {
-                Throwable cause = reply.cause();
-                loggingAssistant.logError(log, cause);
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                  DeleteRequestStorageRequestsResponse
-                    .withPlainInternalServerError(cause.getMessage())));
-              }
-            } catch (Exception e) {
-              loggingAssistant.logError(log, e);
-              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+        deleteAll(vertxContext, tenantId, reply -> {
+          try {
+            if (reply.succeeded()) {
+              asyncResultHandler.handle(Future.succeededFuture(
+                DeleteRequestStorageRequestsResponse.withNoContent()));
+            } else {
+              Throwable cause = reply.cause();
+              loggingAssistant.logError(log, cause);
+              asyncResultHandler.handle(Future.succeededFuture(
                 DeleteRequestStorageRequestsResponse
-                  .withPlainInternalServerError(e.getMessage())));
+                  .withPlainInternalServerError(cause.getMessage())));
             }
-          });
+          } catch (Exception e) {
+            loggingAssistant.logError(log, e);
+            asyncResultHandler.handle(Future.succeededFuture(
+              DeleteRequestStorageRequestsResponse
+                .withPlainInternalServerError(e.getMessage())));
+          }
+        }, REQUEST_TABLE);
       }
       catch(Exception e) {
         loggingAssistant.logError(log, e);
@@ -466,4 +460,17 @@ public class RequestsAPI implements RequestStorageResource {
     }
   }
 
+  private void deleteAll(
+    Context vertxContext,
+    String tenantId,
+    Handler<AsyncResult<String>> handleResult,
+    String table) {
+
+    PostgresClient postgresClient = PostgresClient.getInstance(
+      vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
+
+    postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.%s",
+      tenantId, "mod_circulation_storage", table),
+      handleResult);
+  }
 }
