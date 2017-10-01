@@ -6,6 +6,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.folio.rest.impl.support.SimpleLoggingAssistant;
 import org.folio.rest.jaxrs.model.Request;
 import org.folio.rest.jaxrs.model.Requests;
 import org.folio.rest.jaxrs.resource.LoanPolicyStorageResource;
@@ -32,6 +33,7 @@ public class RequestsAPI implements RequestStorageResource {
   private static final Logger log = LoggerFactory.getLogger(RequestsAPI.class);
 
   private final String REQUEST_TABLE = "request";
+  private final SimpleLoggingAssistant loggingAssistant = new SimpleLoggingAssistant();
 
   @Override
   public void deleteRequestStorageRequests(
@@ -57,13 +59,13 @@ public class RequestsAPI implements RequestStorageResource {
               }
               else {
                 Throwable cause = reply.cause();
-                logError(cause);
+                loggingAssistant.logError(log, cause);
                 asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
                   DeleteRequestStorageRequestsResponse
                     .withPlainInternalServerError(cause.getMessage())));
               }
             } catch (Exception e) {
-              logError(e);
+              loggingAssistant.logError(log, e);
               asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
                 DeleteRequestStorageRequestsResponse
                   .withPlainInternalServerError(e.getMessage())));
@@ -71,7 +73,7 @@ public class RequestsAPI implements RequestStorageResource {
           });
       }
       catch(Exception e) {
-        logError(e);
+        loggingAssistant.logError(log, e);
         asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
           DeleteRequestStorageRequestsResponse
             .withPlainInternalServerError(e.getMessage())));
@@ -118,27 +120,27 @@ public class RequestsAPI implements RequestStorageResource {
                     GetRequestStorageRequestsResponse.withJsonOK(pagedRequests)));
                 }
                 else {
-                  logError(reply.cause());
+                  loggingAssistant.logError(log, reply.cause());
                   asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
                     LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
                       withPlainInternalServerError(reply.cause().getMessage())));
                 }
               } catch (Exception e) {
-                logError(e);
+                loggingAssistant.logError(log, e);
                 asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
                   LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
                     withPlainInternalServerError(e.getMessage())));
               }
             });
         } catch (Exception e) {
-          logError(e);
+          loggingAssistant.logError(log, e);
           asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
             LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
               withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
-      logError(e);
+      loggingAssistant.logError(log, e);
       asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
         LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
           withPlainInternalServerError(e.getMessage())));
@@ -179,14 +181,14 @@ public class RequestsAPI implements RequestStorageResource {
                         .withJsonCreated(reply.result(), stream)));
                 }
                 else {
-                  logError(reply.cause());
+                  loggingAssistant.logError(log, reply.cause());
                   asyncResultHandler.handle(
                     io.vertx.core.Future.succeededFuture(
                       PostRequestStorageRequestsResponse
                         .withPlainInternalServerError(reply.cause().toString())));
                 }
               } catch (Exception e) {
-                logError(e);
+                loggingAssistant.logError(log, e);
                 asyncResultHandler.handle(
                   io.vertx.core.Future.succeededFuture(
                     PostRequestStorageRequestsResponse
@@ -194,14 +196,14 @@ public class RequestsAPI implements RequestStorageResource {
               }
             });
         } catch (Exception e) {
-          logError(e);
+          loggingAssistant.logError(log, e);
           asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
             PostRequestStorageRequestsResponse
               .withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
-      logError(e);
+      loggingAssistant.logError(log, e);
       asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
         LoanPolicyStorageResource.PostLoanPolicyStorageLoanPoliciesResponse
           .withPlainInternalServerError(e.getMessage())));
@@ -253,7 +255,7 @@ public class RequestsAPI implements RequestStorageResource {
                           withPlainNotFound("Not Found")));
                   }
                 } else {
-                  logError(reply.cause());
+                  loggingAssistant.logError(log, reply.cause());
                   asyncResultHandler.handle(
                     Future.succeededFuture(
                         GetRequestStorageRequestsByRequestIdResponse.
@@ -261,21 +263,21 @@ public class RequestsAPI implements RequestStorageResource {
 
                 }
               } catch (Exception e) {
-                logError(e);
+                loggingAssistant.logError(log, e);
                 asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
                   GetRequestStorageRequestsByRequestIdResponse.
                     withPlainInternalServerError(e.getMessage())));
               }
             });
         } catch (Exception e) {
-          logError(e);
+          loggingAssistant.logError(log, e);
           asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
             GetRequestStorageRequestsByRequestIdResponse.
               withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
-      logError(e);
+      loggingAssistant.logError(log, e);
       asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
           GetRequestStorageRequestsByRequestIdResponse.
           withPlainInternalServerError(e.getMessage())));
@@ -316,21 +318,21 @@ public class RequestsAPI implements RequestStorageResource {
                       .withNoContent()));
               }
               else {
-                logError(reply.cause());
+                loggingAssistant.logError(log, reply.cause());
                 asyncResultHandler.handle(Future.succeededFuture(
                   DeleteRequestStorageRequestsByRequestIdResponse
                     .withPlainInternalServerError(reply.cause().getMessage())));
               }
             });
         } catch (Exception e) {
-          logError(e);
+          loggingAssistant.logError(log, e);
           asyncResultHandler.handle(Future.succeededFuture(
             DeleteRequestStorageRequestsByRequestIdResponse
               .withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
-      logError(e);
+      loggingAssistant.logError(log, e);
       asyncResultHandler.handle(Future.succeededFuture(
         DeleteRequestStorageRequestsByRequestIdResponse
           .withPlainInternalServerError(e.getMessage())));
@@ -383,7 +385,7 @@ public class RequestsAPI implements RequestStorageResource {
                                   .withNoContent()));
                           }
                           else {
-                            logError(update.cause());
+                            loggingAssistant.logError(log, update.cause());
                             asyncResultHandler.handle(
                               Future.succeededFuture(
                                 PutRequestStorageRequestsByRequestIdResponse
@@ -391,7 +393,7 @@ public class RequestsAPI implements RequestStorageResource {
                                     update.cause().getMessage())));
                           }
                         } catch (Exception e) {
-                          logError(e);
+                          loggingAssistant.logError(log, e);
                           asyncResultHandler.handle(
                             Future.succeededFuture(
                               PutRequestStorageRequestsByRequestIdResponse
@@ -399,7 +401,7 @@ public class RequestsAPI implements RequestStorageResource {
                         }
                       });
                   } catch (Exception e) {
-                    logError(e);
+                    loggingAssistant.logError(log, e);
                     asyncResultHandler.handle(Future.succeededFuture(
                       PutRequestStorageRequestsByRequestIdResponse
                         .withPlainInternalServerError(e.getMessage())));
@@ -420,7 +422,7 @@ public class RequestsAPI implements RequestStorageResource {
                                   .withNoContent()));
                           }
                           else {
-                            logError(save.cause());
+                            loggingAssistant.logError(log, save.cause());
                             asyncResultHandler.handle(
                               Future.succeededFuture(
                                 PutRequestStorageRequestsByRequestIdResponse
@@ -428,7 +430,7 @@ public class RequestsAPI implements RequestStorageResource {
                                     save.cause().getMessage())));
                           }
                         } catch (Exception e) {
-                          logError(e);
+                          loggingAssistant.logError(log, e);
                           asyncResultHandler.handle(
                             Future.succeededFuture(
                               PutRequestStorageRequestsByRequestIdResponse
@@ -436,35 +438,32 @@ public class RequestsAPI implements RequestStorageResource {
                         }
                       });
                   } catch (Exception e) {
-                    logError(e);
+                    loggingAssistant.logError(log, e);
                     asyncResultHandler.handle(Future.succeededFuture(
                       PutRequestStorageRequestsByRequestIdResponse
                         .withPlainInternalServerError(e.getMessage())));
                   }
                 }
               } else {
-                logError(reply.cause());
+                loggingAssistant.logError(log, reply.cause());
                 asyncResultHandler.handle(Future.succeededFuture(
                   PutRequestStorageRequestsByRequestIdResponse
                     .withPlainInternalServerError(reply.cause().getMessage())));
               }
             });
         } catch (Exception e) {
-          logError(e);
+          loggingAssistant.logError(log, e);
           asyncResultHandler.handle(Future.succeededFuture(
             PutRequestStorageRequestsByRequestIdResponse
               .withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
-      logError(e);
+      loggingAssistant.logError(log, e);
       asyncResultHandler.handle(Future.succeededFuture(
         PutRequestStorageRequestsByRequestIdResponse
           .withPlainInternalServerError(e.getMessage())));
     }
   }
 
-  private void logError(Throwable cause) {
-    log.error(cause.getMessage(), cause);
-  }
 }
