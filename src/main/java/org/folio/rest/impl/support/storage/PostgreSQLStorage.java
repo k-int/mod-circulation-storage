@@ -6,7 +6,8 @@ import io.vertx.core.Handler;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.TenantTool;
 
-public class PostgreSQLStorage {
+public class PostgreSQLStorage implements Storage {
+  @Override
   public void deleteAll(
     Context vertxContext,
     String tenantId,

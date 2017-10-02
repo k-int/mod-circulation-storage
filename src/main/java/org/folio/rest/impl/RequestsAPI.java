@@ -6,8 +6,10 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.folio.rest.impl.support.LoggingAssistant;
 import org.folio.rest.impl.support.SimpleLoggingAssistant;
 import org.folio.rest.impl.support.storage.PostgreSQLStorage;
+import org.folio.rest.impl.support.storage.Storage;
 import org.folio.rest.jaxrs.model.Request;
 import org.folio.rest.jaxrs.model.Requests;
 import org.folio.rest.jaxrs.resource.LoanPolicyStorageResource;
@@ -31,11 +33,20 @@ import static org.folio.rest.impl.Headers.TENANT_HEADER;
 
 public class RequestsAPI implements RequestStorageResource {
 
+  private static final String REQUEST_TABLE = "request";
   private static final Logger log = LoggerFactory.getLogger(RequestsAPI.class);
 
-  private final String REQUEST_TABLE = "request";
-  private final SimpleLoggingAssistant loggingAssistant = new SimpleLoggingAssistant();
-  private final PostgreSQLStorage storage = new PostgreSQLStorage();
+  private final Storage storage;
+  private final LoggingAssistant loggingAssistant;
+
+  public RequestsAPI() {
+    this(new PostgreSQLStorage(), new SimpleLoggingAssistant());
+  }
+
+  public RequestsAPI(Storage storage, LoggingAssistant loggingAssistant) {
+    this.storage = storage;
+    this.loggingAssistant = loggingAssistant;
+  }
 
   @Override
   public void deleteRequestStorageRequests(
