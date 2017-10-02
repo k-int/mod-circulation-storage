@@ -9,5 +9,5 @@ public interface Storage {
     Context vertxContext,
     String tenantId,
     Handler<AsyncResult<String>> handleResult,
-    String table);
+    String table) throws Exception;
 }

@@ -12,7 +12,7 @@ public class PostgreSQLStorage implements Storage {
     Context vertxContext,
     String tenantId,
     Handler<AsyncResult<String>> handleResult,
-    String table) {
+    String table) throws Exception {
 
     PostgresClient postgresClient = PostgresClient.getInstance(
       vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
