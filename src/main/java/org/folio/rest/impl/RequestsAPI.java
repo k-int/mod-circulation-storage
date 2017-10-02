@@ -7,6 +7,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.folio.rest.impl.support.SimpleLoggingAssistant;
+import org.folio.rest.impl.support.storage.PostgreSQLStorage;
 import org.folio.rest.jaxrs.model.Request;
 import org.folio.rest.jaxrs.model.Requests;
 import org.folio.rest.jaxrs.resource.LoanPolicyStorageResource;
@@ -34,6 +35,7 @@ public class RequestsAPI implements RequestStorageResource {
 
   private final String REQUEST_TABLE = "request";
   private final SimpleLoggingAssistant loggingAssistant = new SimpleLoggingAssistant();
+  private final PostgreSQLStorage storage = new PostgreSQLStorage();
 
   @Override
   public void deleteRequestStorageRequests(
@@ -46,7 +48,7 @@ public class RequestsAPI implements RequestStorageResource {
 
     vertxContext.runOnContext(v -> {
       try {
-        deleteAll(vertxContext, tenantId, reply -> {
+        storage.deleteAll(vertxContext, tenantId, reply -> {
           try {
             if (reply.succeeded()) {
               asyncResultHandler.handle(Future.succeededFuture(
@@ -458,19 +460,5 @@ public class RequestsAPI implements RequestStorageResource {
         PutRequestStorageRequestsByRequestIdResponse
           .withPlainInternalServerError(e.getMessage())));
     }
-  }
-
-  private void deleteAll(
-    Context vertxContext,
-    String tenantId,
-    Handler<AsyncResult<String>> handleResult,
-    String table) {
-
-    PostgresClient postgresClient = PostgresClient.getInstance(
-      vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
-
-    postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.%s",
-      tenantId, "mod_circulation_storage", table),
-      handleResult);
   }
 }
