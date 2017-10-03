@@ -61,20 +61,18 @@ public class RequestsAPI implements RequestStorageResource {
     vertxContext.runOnContext(v -> {
       try {
         storage.deleteAll(vertxContext, tenantId,
-          ResultHandler.filter(r -> asyncResultHandler.handle(Future.succeededFuture(
-            DeleteRequestStorageRequestsResponse.withNoContent())),
+          ResultHandler.filter(r -> respond(asyncResultHandler,
+              DeleteRequestStorageRequestsResponse.withNoContent()),
             e -> {
               loggingAssistant.logError(log, e);
-              asyncResultHandler.handle(Future.succeededFuture(
-                DeleteRequestStorageRequestsResponse
-                  .withPlainInternalServerError(e.getMessage())));}
-            ), REQUEST_TABLE);
+              respond(asyncResultHandler, DeleteRequestStorageRequestsResponse
+                .withPlainInternalServerError(e.getMessage()));
+          }), REQUEST_TABLE);
       }
       catch(Exception e) {
         loggingAssistant.logError(log, e);
-        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-          DeleteRequestStorageRequestsResponse
-            .withPlainInternalServerError(e.getMessage())));
+        respond(asyncResultHandler, DeleteRequestStorageRequestsResponse
+          .withPlainInternalServerError(e.getMessage()));
       }
     });
   }
@@ -462,5 +460,12 @@ public class RequestsAPI implements RequestStorageResource {
         PutRequestStorageRequestsByRequestIdResponse
           .withPlainInternalServerError(e.getMessage())));
     }
+  }
+
+  private void respond(
+    Handler<AsyncResult<Response>> handler,
+    DeleteRequestStorageRequestsResponse response) {
+
+    handler.handle(Future.succeededFuture(response));
   }
 }
