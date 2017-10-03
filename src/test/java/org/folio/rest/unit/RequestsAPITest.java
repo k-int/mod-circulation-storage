@@ -51,7 +51,7 @@ public class RequestsAPITest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    fail(expectedException).when(mockStorage).deleteAll(any(), any(), any(), any());
+    fail(expectedException).when(mockStorage).deleteAll(any(), any(), any());
 
     CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
 
@@ -66,7 +66,7 @@ public class RequestsAPITest {
     assertThat(response.result().getStatus(), is(500));
 
     verify(mockLogAssistant, times(1)).logError(any(), eq(expectedException));
-    verify(mockStorage, times(1)).deleteAll(any(), any(), any(), any());
+    verify(mockStorage, times(1)).deleteAll(any(), any(), any());
   }
 
   @Test
@@ -78,7 +78,7 @@ public class RequestsAPITest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    doThrow(expectedException).when(mockStorage).deleteAll(any(), any(), any(), any());
+    doThrow(expectedException).when(mockStorage).deleteAll(any(), any(), any());
 
     CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
 
@@ -93,7 +93,7 @@ public class RequestsAPITest {
     assertThat(response.result().getStatus(), is(500));
 
     verify(mockLogAssistant, times(1)).logError(any(), eq(expectedException));
-    verify(mockStorage, times(1)).deleteAll(any(), any(), any(), any());
+    verify(mockStorage, times(1)).deleteAll(any(), any(), any());
   }
 
   @Test
@@ -103,9 +103,7 @@ public class RequestsAPITest {
 
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
-    Exception expectedException = new Exception("Sample Failure");
-
-    succeed(expectedException).when(mockStorage).deleteAll(any(), any(), any(), any());
+    succeed().when(mockStorage).deleteAll(any(), any(), any());
 
     CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
 
@@ -119,8 +117,8 @@ public class RequestsAPITest {
 
     assertThat(response.result().getStatus(), is(204));
 
-    verify(mockLogAssistant, never()).logError(any(), eq(expectedException));
-    verify(mockStorage, times(1)).deleteAll(any(), any(), any(), any());
+    verify(mockLogAssistant, never()).logError(any(), any());
+    verify(mockStorage, times(1)).deleteAll(any(), any(), any());
   }
 
   private Stubber fail(Exception expectedException) {
@@ -131,7 +129,7 @@ public class RequestsAPITest {
     });
   }
 
-  private Stubber succeed(Exception expectedException) {
+  private Stubber succeed() {
     return doAnswer(invocation -> {
       Handler<AsyncResult<String>> handler = invocation.getArgument(2);
       handler.handle(success(""));
