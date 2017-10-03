@@ -8,6 +8,5 @@ public interface Storage {
   void deleteAll(
     Context vertxContext,
     String tenantId,
-    Handler<AsyncResult<String>> handleResult,
-    String table) throws Exception;
+    Handler<AsyncResult<String>> handleResult) throws Exception;
 }

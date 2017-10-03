@@ -41,7 +41,7 @@ public class RequestsAPI implements RequestStorageResource {
   private final LoggingAssistant loggingAssistant;
 
   public RequestsAPI() {
-    this(new PostgreSQLStorage(), new SimpleLoggingAssistant());
+    this(new PostgreSQLStorage(REQUEST_TABLE), new SimpleLoggingAssistant());
   }
 
   public RequestsAPI(Storage storage, LoggingAssistant loggingAssistant) {
@@ -67,7 +67,7 @@ public class RequestsAPI implements RequestStorageResource {
               loggingAssistant.logError(log, e);
               respond(asyncResultHandler, DeleteRequestStorageRequestsResponse
                 .withPlainInternalServerError(e.getMessage()));
-          }), REQUEST_TABLE);
+          }));
       }
       catch(Exception e) {
         loggingAssistant.logError(log, e);
