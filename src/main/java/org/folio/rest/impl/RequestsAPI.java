@@ -7,6 +7,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.folio.rest.impl.support.LoggingAssistant;
+import org.folio.rest.impl.support.ResultHandler;
 import org.folio.rest.impl.support.SimpleLoggingAssistant;
 import org.folio.rest.impl.support.storage.PostgreSQLStorage;
 import org.folio.rest.impl.support.storage.Storage;
@@ -59,25 +60,15 @@ public class RequestsAPI implements RequestStorageResource {
 
     vertxContext.runOnContext(v -> {
       try {
-        storage.deleteAll(vertxContext, tenantId, reply -> {
-          try {
-            if (reply.succeeded()) {
-              asyncResultHandler.handle(Future.succeededFuture(
-                DeleteRequestStorageRequestsResponse.withNoContent()));
-            } else {
-              Throwable cause = reply.cause();
-              loggingAssistant.logError(log, cause);
+        storage.deleteAll(vertxContext, tenantId,
+          ResultHandler.filter(r -> asyncResultHandler.handle(Future.succeededFuture(
+            DeleteRequestStorageRequestsResponse.withNoContent())),
+            e -> {
+              loggingAssistant.logError(log, e);
               asyncResultHandler.handle(Future.succeededFuture(
                 DeleteRequestStorageRequestsResponse
-                  .withPlainInternalServerError(cause.getMessage())));
-            }
-          } catch (Exception e) {
-            loggingAssistant.logError(log, e);
-            asyncResultHandler.handle(Future.succeededFuture(
-              DeleteRequestStorageRequestsResponse
-                .withPlainInternalServerError(e.getMessage())));
-          }
-        }, REQUEST_TABLE);
+                  .withPlainInternalServerError(e.getMessage())));}
+            ), REQUEST_TABLE);
       }
       catch(Exception e) {
         loggingAssistant.logError(log, e);
