@@ -7,4 +7,8 @@ public class SimpleLoggingAssistant implements LoggingAssistant {
   public void logError(Logger logger, Throwable error) {
     logger.error(error.getMessage(), error);
   }
+
+  public void logError(Logger logger, String error) {
+    logger.error(error);
+  }
 }
