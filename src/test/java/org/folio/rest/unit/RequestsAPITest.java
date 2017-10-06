@@ -51,7 +51,7 @@ public class RequestsAPITest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    fail(expectedException).when(mockStorage).deleteAll(any(), any(), any());
+    fail(expectedException).when(mockStorage).deleteAll(eq(context), eq(TENANT_ID), any());
 
     CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
 
@@ -68,7 +68,7 @@ public class RequestsAPITest {
     verify(mockLogAssistant, times(1)).logError(any(), eq(expectedException));
     verify(mockLogAssistant, never()).logError(any(), any(String.class));
 
-    verify(mockStorage, times(1)).deleteAll(any(), any(), any());
+    verify(mockStorage, times(1)).deleteAll(eq(context), eq(TENANT_ID), any());
   }
 
   @Test
@@ -78,7 +78,7 @@ public class RequestsAPITest {
 
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
-    fail(null).when(mockStorage).deleteAll(any(), any(), any());
+    fail(null).when(mockStorage).deleteAll(eq(context), eq(TENANT_ID), any());
 
     CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
 
@@ -97,7 +97,7 @@ public class RequestsAPITest {
 
     verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
 
-    verify(mockStorage, times(1)).deleteAll(any(), any(), any());
+    verify(mockStorage, times(1)).deleteAll(eq(context), eq(TENANT_ID), any());
   }
 
   @Test
@@ -109,7 +109,7 @@ public class RequestsAPITest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    doThrow(expectedException).when(mockStorage).deleteAll(any(), any(), any());
+    doThrow(expectedException).when(mockStorage).deleteAll(eq(context), eq(TENANT_ID), any());
 
     CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
 
@@ -126,17 +126,17 @@ public class RequestsAPITest {
     verify(mockLogAssistant, times(1)).logError(any(), eq(expectedException));
     verify(mockLogAssistant, never()).logError(any(), any(String.class));
 
-    verify(mockStorage, times(1)).deleteAll(any(), any(), any());
+    verify(mockStorage, times(1)).deleteAll(eq(context), eq(TENANT_ID), any());
   }
 
   @Test
-  public void shouldNotLogAnythinDuringSuccessfulDeleteAll() throws Exception {
+  public void shouldNotLogDuringSuccessfulDeleteAll() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
 
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
-    succeed().when(mockStorage).deleteAll(any(), any(), any());
+    succeed().when(mockStorage).deleteAll(eq(context), eq(TENANT_ID), any());
 
     CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
 
@@ -153,7 +153,7 @@ public class RequestsAPITest {
     verify(mockLogAssistant, never()).logError(any(), any(String.class));
     verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
 
-    verify(mockStorage, times(1)).deleteAll(any(), any(), any());
+    verify(mockStorage, times(1)).deleteAll(eq(context), eq(TENANT_ID), any());
   }
 
   private Stubber fail(Exception expectedException) {
