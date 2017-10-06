@@ -64,9 +64,19 @@ public class RequestsAPI implements RequestStorageResource {
           ResultHandler.filter(r -> respond(asyncResultHandler,
               DeleteRequestStorageRequestsResponse.withNoContent()),
             e -> {
-              loggingAssistant.logError(log, e);
-              respond(asyncResultHandler, DeleteRequestStorageRequestsResponse
-                .withPlainInternalServerError(e.getMessage()));
+              if(e != null) {
+                loggingAssistant.logError(log, e);
+                respond(asyncResultHandler, DeleteRequestStorageRequestsResponse
+                  .withPlainInternalServerError(e.getMessage()));
+              }
+              else {
+                loggingAssistant.logError(log,
+                  "Unknown failure cause when attempting to delete all requests");
+
+                respond(asyncResultHandler, DeleteRequestStorageRequestsResponse
+                  .withPlainInternalServerError(
+                    "Unknown failure cause when attempting to delete all requests"));
+              }
           }));
       }
       catch(Exception e) {

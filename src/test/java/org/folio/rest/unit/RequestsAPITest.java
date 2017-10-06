@@ -66,6 +66,37 @@ public class RequestsAPITest {
     assertThat(response.result().getStatus(), is(500));
 
     verify(mockLogAssistant, times(1)).logError(any(), eq(expectedException));
+    verify(mockLogAssistant, never()).logError(any(), any(String.class));
+
+    verify(mockStorage, times(1)).deleteAll(any(), any(), any());
+  }
+
+  @Test
+  public void shouldLogUnknownFailureDuringDeleteAll() throws Exception {
+    LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
+    Storage mockStorage = mock(Storage.class);
+
+    RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
+
+    fail(null).when(mockStorage).deleteAll(any(), any(), any());
+
+    CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
+
+    requestsAPI.deleteRequestStorageRequests(
+      sampleLanguage(),
+      sampleHeaders(),
+      complete(requestFinished),
+      context);
+
+    AsyncResult<Response> response = requestFinished.get(3, TimeUnit.SECONDS);
+
+    assertThat(response.result().getStatus(), is(500));
+
+    verify(mockLogAssistant, times(1)).logError(any(),
+      eq("Unknown failure cause when attempting to delete all requests"));
+
+    verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
+
     verify(mockStorage, times(1)).deleteAll(any(), any(), any());
   }
 
@@ -93,6 +124,8 @@ public class RequestsAPITest {
     assertThat(response.result().getStatus(), is(500));
 
     verify(mockLogAssistant, times(1)).logError(any(), eq(expectedException));
+    verify(mockLogAssistant, never()).logError(any(), any(String.class));
+
     verify(mockStorage, times(1)).deleteAll(any(), any(), any());
   }
 
@@ -117,7 +150,9 @@ public class RequestsAPITest {
 
     assertThat(response.result().getStatus(), is(204));
 
-    verify(mockLogAssistant, never()).logError(any(), any());
+    verify(mockLogAssistant, never()).logError(any(), any(String.class));
+    verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
+
     verify(mockStorage, times(1)).deleteAll(any(), any(), any());
   }
 
