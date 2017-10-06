@@ -29,6 +29,8 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static org.folio.rest.impl.Headers.TENANT_HEADER;
 
@@ -58,31 +60,21 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
+      asyncResultHandler,
+      "Unknown failure cause when attempting to delete all requests",
+      (message) -> DeleteRequestStorageRequestsResponse
+        .withPlainInternalServerError(message));
+
     vertxContext.runOnContext(v -> {
       try {
         storage.deleteAll(vertxContext, tenantId,
           ResultHandler.filter(r -> respond(asyncResultHandler,
               DeleteRequestStorageRequestsResponse.withNoContent()),
-            e -> {
-              if(e != null) {
-                loggingAssistant.logError(log, e);
-                respond(asyncResultHandler, DeleteRequestStorageRequestsResponse
-                  .withPlainInternalServerError(e.getMessage()));
-              }
-              else {
-                loggingAssistant.logError(log,
-                  "Unknown failure cause when attempting to delete all requests");
-
-                respond(asyncResultHandler, DeleteRequestStorageRequestsResponse
-                  .withPlainInternalServerError(
-                    "Unknown failure cause when attempting to delete all requests"));
-              }
-          }));
+            onExceptionalFailure));
       }
       catch(Exception e) {
-        loggingAssistant.logError(log, e);
-        respond(asyncResultHandler, DeleteRequestStorageRequestsResponse
-          .withPlainInternalServerError(e.getMessage()));
+        onExceptionalFailure.accept(e);
       }
     });
   }
@@ -474,8 +466,26 @@ public class RequestsAPI implements RequestStorageResource {
 
   private void respond(
     Handler<AsyncResult<Response>> handler,
-    DeleteRequestStorageRequestsResponse response) {
+    Response response) {
 
     handler.handle(Future.succeededFuture(response));
+  }
+
+  private Consumer<Throwable> onExceptionalFailure(
+    Handler<AsyncResult<Response>> responseHandler,
+    String unknownFailureMessage,
+    Function<String, Response> failureResponseCreator) {
+
+    return (e) -> {
+      if(e != null) {
+        loggingAssistant.logError(log, e);
+        respond(responseHandler, failureResponseCreator.apply(e.getMessage()));
+      }
+      else {
+        loggingAssistant.logError(log, unknownFailureMessage);
+
+        respond(responseHandler, failureResponseCreator.apply(unknownFailureMessage));
+      }
+    };
   }
 }
