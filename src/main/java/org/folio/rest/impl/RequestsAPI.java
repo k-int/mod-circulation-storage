@@ -17,13 +17,9 @@ import org.folio.rest.jaxrs.resource.LoanPolicyStorageResource;
 import org.folio.rest.jaxrs.resource.RequestStorageResource;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.Criteria.Limit;
-import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.OutStream;
 import org.folio.rest.tools.utils.TenantTool;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -43,7 +39,8 @@ public class RequestsAPI implements RequestStorageResource {
   private final LoggingAssistant loggingAssistant;
 
   public RequestsAPI() {
-    this(new PostgreSQLStorage(REQUEST_TABLE), new SimpleLoggingAssistant());
+    this(new PostgreSQLStorage(REQUEST_TABLE, Request.class),
+      new SimpleLoggingAssistant());
   }
 
   public RequestsAPI(Storage storage, LoggingAssistant loggingAssistant) {
@@ -94,42 +91,42 @@ public class RequestsAPI implements RequestStorageResource {
     try {
       vertxContext.runOnContext(v -> {
         try {
-          PostgresClient postgresClient = PostgresClient.getInstance(
-            vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
+          storage.getAll(offset, limit, query, vertxContext, tenantId, reply -> {
+            try {
+              if (reply.succeeded()) {
+                List<Request> requests = (List<Request>) reply.result()[0];
 
-          String[] fieldList = {"*"};
+                Requests pagedRequests = new Requests();
+                pagedRequests.setRequests(requests);
+                pagedRequests.setTotalRecords((Integer) reply.result()[1]);
 
-          CQL2PgJSON cql2pgJson = new CQL2PgJSON(String.format("%s.jsonb", REQUEST_TABLE));
-          CQLWrapper cql = new CQLWrapper(cql2pgJson, query)
-            .setLimit(new Limit(limit))
-            .setOffset(new Offset(offset));
-
-          postgresClient.get(REQUEST_TABLE, Request.class, fieldList, cql,
-            true, false, reply -> {
-              try {
-                if(reply.succeeded()) {
-                  List<Request> requests = (List<Request>) reply.result()[0];
-
-                  Requests pagedRequests = new Requests();
-                  pagedRequests.setRequests(requests);
-                  pagedRequests.setTotalRecords((Integer)reply.result()[1]);
-
-                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                    GetRequestStorageRequestsResponse.withJsonOK(pagedRequests)));
-                }
-                else {
+                asyncResultHandler.handle(Future.succeededFuture(
+                  GetRequestStorageRequestsResponse.withJsonOK(pagedRequests)));
+              } else {
+                if(reply.cause() != null) {
                   loggingAssistant.logError(log, reply.cause());
-                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+                  asyncResultHandler.handle(Future.succeededFuture(
                     LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
                       withPlainInternalServerError(reply.cause().getMessage())));
                 }
-              } catch (Exception e) {
-                loggingAssistant.logError(log, e);
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                  LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
-                    withPlainInternalServerError(e.getMessage())));
+                else {
+                  loggingAssistant.logError(log,
+                    "Unknown failure cause when attempting to get all requests");
+                  
+                  asyncResultHandler.handle(Future.succeededFuture(
+                    LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
+                      withPlainInternalServerError(
+                        "Unknown failure cause when attempting to delete all requests")));
+                }
               }
-            });
+            } catch (Exception e) {
+              loggingAssistant.logError(log, e);
+              asyncResultHandler.handle(Future.succeededFuture(
+                LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
+                  withPlainInternalServerError(e.getMessage())));
+            }
+          });
+
         } catch (Exception e) {
           loggingAssistant.logError(log, e);
           asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(

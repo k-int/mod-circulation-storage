@@ -3,27 +3,56 @@ package org.folio.rest.impl.support.storage;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import org.folio.rest.persist.Criteria.Limit;
+import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.TenantTool;
+import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 
 public class PostgreSQLStorage implements Storage {
   private final String tableName;
+  private final Class entityClass;
 
-  public PostgreSQLStorage(String tableName) {
+  public PostgreSQLStorage(String tableName, Class entityClass) {
     this.tableName = tableName;
+    this.entityClass = entityClass;
   }
 
   @Override
   public void deleteAll(
-    Context vertxContext,
+    Context context,
     String tenantId,
     Handler<AsyncResult<String>> handleResult) throws Exception {
 
     PostgresClient postgresClient = PostgresClient.getInstance(
-      vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
+      context.owner(), TenantTool.calculateTenantId(tenantId));
 
     postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.%s",
       tenantId, "mod_circulation_storage", tableName),
       handleResult);
+  }
+
+  @Override
+  public void getAll(
+    int offset,
+    int limit,
+    String query,
+    Context context,
+    String tenantId,
+    Handler<AsyncResult<Object[]>> handleResult) throws Exception {
+
+    PostgresClient postgresClient = PostgresClient.getInstance(
+      context.owner(), TenantTool.calculateTenantId(tenantId));
+
+    String[] fieldList = {"*"};
+
+    CQL2PgJSON cql2pgJson = new CQL2PgJSON(String.format("%s.jsonb", tableName));
+    CQLWrapper cql = new CQLWrapper(cql2pgJson, query)
+      .setLimit(new Limit(limit))
+      .setOffset(new Offset(offset));
+
+    postgresClient.get(tableName, entityClass, fieldList, cql,
+      true, false, handleResult);
   }
 }
