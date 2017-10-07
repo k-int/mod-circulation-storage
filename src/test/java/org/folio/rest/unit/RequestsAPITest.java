@@ -2,7 +2,6 @@ package org.folio.rest.unit;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import org.folio.rest.impl.RequestsAPI;
 import org.folio.rest.impl.support.LoggingAssistant;
@@ -15,9 +14,9 @@ import org.junit.Test;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
+import static org.folio.rest.unit.support.HandlerCompletion.complete;
+import static org.folio.rest.unit.support.HandlerCompletion.getOnCompletion;
 import static org.folio.rest.unit.support.StubberAssistant.fail;
 import static org.folio.rest.unit.support.StubberAssistant.succeed;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,15 +53,12 @@ public class RequestsAPITest {
 
     fail(expectedException, 2).when(mockStorage).deleteAll(eq(context), eq(TENANT_ID), any());
 
-    CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
-
-    requestsAPI.deleteRequestStorageRequests(
-      SampleParameters.sampleLanguage(),
-      SampleParameters.sampleHeaders(TENANT_ID),
-      complete(requestFinished),
-      context);
-
-    AsyncResult<Response> response = requestFinished.get(3, TimeUnit.SECONDS);
+    AsyncResult<Response> response = getOnCompletion(f ->
+      requestsAPI.deleteRequestStorageRequests(
+        SampleParameters.sampleLanguage(),
+        SampleParameters.sampleHeaders(TENANT_ID),
+        complete(f),
+        context));
 
     assertThat(response.result().getStatus(), is(500));
 
@@ -81,15 +77,12 @@ public class RequestsAPITest {
 
     fail(null, 2).when(mockStorage).deleteAll(eq(context), eq(TENANT_ID), any());
 
-    CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
-
-    requestsAPI.deleteRequestStorageRequests(
-      SampleParameters.sampleLanguage(),
-      SampleParameters.sampleHeaders(TENANT_ID),
-      complete(requestFinished),
-      context);
-
-    AsyncResult<Response> response = requestFinished.get(3, TimeUnit.SECONDS);
+    AsyncResult<Response> response = getOnCompletion(f ->
+      requestsAPI.deleteRequestStorageRequests(
+        SampleParameters.sampleLanguage(),
+        SampleParameters.sampleHeaders(TENANT_ID),
+        complete(f),
+        context));
 
     assertThat(response.result().getStatus(), is(500));
 
@@ -112,15 +105,12 @@ public class RequestsAPITest {
 
     doThrow(expectedException).when(mockStorage).deleteAll(eq(context), eq(TENANT_ID), any());
 
-    CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
-
-    requestsAPI.deleteRequestStorageRequests(
-      SampleParameters.sampleLanguage(),
-      SampleParameters.sampleHeaders(TENANT_ID),
-      complete(requestFinished),
-      context);
-
-    AsyncResult<Response> response = requestFinished.get(3, TimeUnit.SECONDS);
+    AsyncResult<Response> response = getOnCompletion(f ->
+      requestsAPI.deleteRequestStorageRequests(
+        SampleParameters.sampleLanguage(),
+        SampleParameters.sampleHeaders(TENANT_ID),
+        complete(f),
+        context));
 
     assertThat(response.result().getStatus(), is(500));
 
@@ -139,15 +129,12 @@ public class RequestsAPITest {
 
     succeed("", 2).when(mockStorage).deleteAll(eq(context), eq(TENANT_ID), any());
 
-    CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
-
-    requestsAPI.deleteRequestStorageRequests(
-      SampleParameters.sampleLanguage(),
-      SampleParameters.sampleHeaders(TENANT_ID),
-      complete(requestFinished),
-      context);
-
-    AsyncResult<Response> response = requestFinished.get(3, TimeUnit.SECONDS);
+    AsyncResult<Response> response = getOnCompletion(f ->
+      requestsAPI.deleteRequestStorageRequests(
+        SampleParameters.sampleLanguage(),
+        SampleParameters.sampleHeaders(TENANT_ID),
+        complete(f),
+        context));
 
     assertThat(response.result().getStatus(), is(204));
 
@@ -169,16 +156,13 @@ public class RequestsAPITest {
     fail(expectedException, 5).when(mockStorage)
       .getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
 
-    CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
-
-    requestsAPI.getRequestStorageRequests(
-      0, 10, "",
-      SampleParameters.sampleLanguage(),
-      SampleParameters.sampleHeaders(TENANT_ID),
-      complete(requestFinished),
-      context);
-
-    AsyncResult<Response> response = requestFinished.get(3, TimeUnit.SECONDS);
+    AsyncResult<Response> response = getOnCompletion(
+      f -> requestsAPI.getRequestStorageRequests(
+        0, 10, "",
+        SampleParameters.sampleLanguage(),
+        SampleParameters.sampleHeaders(TENANT_ID),
+        complete(f),
+        context));
 
     assertThat(response.result().getStatus(), is(500));
 
@@ -198,16 +182,13 @@ public class RequestsAPITest {
     fail(null, 5).when(mockStorage)
       .getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
 
-    CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
-
-    requestsAPI.getRequestStorageRequests(
-      0, 10, "",
-      SampleParameters.sampleLanguage(),
-      SampleParameters.sampleHeaders(TENANT_ID),
-      complete(requestFinished),
-      context);
-
-    AsyncResult<Response> response = requestFinished.get(3, TimeUnit.SECONDS);
+    AsyncResult<Response> response = getOnCompletion(
+      f -> requestsAPI.getRequestStorageRequests(
+        0, 10, "",
+        SampleParameters.sampleLanguage(),
+        SampleParameters.sampleHeaders(TENANT_ID),
+        complete(f),
+        context));
 
     assertThat(response.result().getStatus(), is(500));
 
@@ -231,16 +212,13 @@ public class RequestsAPITest {
     doThrow(expectedException).when(mockStorage)
       .getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
 
-    CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
-
-    requestsAPI.getRequestStorageRequests(
-      0, 10, "",
-      SampleParameters.sampleLanguage(),
-      SampleParameters.sampleHeaders(TENANT_ID),
-      complete(requestFinished),
-      context);
-
-    AsyncResult<Response> response = requestFinished.get(3, TimeUnit.SECONDS);
+    AsyncResult<Response> response = getOnCompletion(f ->
+      requestsAPI.getRequestStorageRequests(
+        0, 10, "",
+        SampleParameters.sampleLanguage(),
+        SampleParameters.sampleHeaders(TENANT_ID),
+        complete(f),
+        context));
 
     assertThat(response.result().getStatus(), is(500));
 
@@ -263,16 +241,13 @@ public class RequestsAPITest {
 
     succeed(result, 5).when(mockStorage).getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
 
-    CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
-
-    requestsAPI.getRequestStorageRequests(
-      0, 10, "",
-      SampleParameters.sampleLanguage(),
-      SampleParameters.sampleHeaders(TENANT_ID),
-      complete(requestFinished),
-      context);
-
-    AsyncResult<Response> response = requestFinished.get(3, TimeUnit.SECONDS);
+    AsyncResult<Response> response = getOnCompletion(f ->
+      requestsAPI.getRequestStorageRequests(
+        0, 10, "",
+        SampleParameters.sampleLanguage(),
+        SampleParameters.sampleHeaders(TENANT_ID),
+        complete(f),
+        context));
 
     assertThat(String.format("Should succeed: %s", response.cause()),
       response.result().getStatus(), is(200));
@@ -281,9 +256,5 @@ public class RequestsAPITest {
     verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
 
     verify(mockStorage, times(1)).getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
-  }
-
-  private static <T> Handler<T> complete(CompletableFuture<T> future) {
-    return t -> future.complete(t);
   }
 }
