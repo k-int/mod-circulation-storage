@@ -8,18 +8,18 @@ import org.folio.rest.impl.RequestsAPI;
 import org.folio.rest.impl.support.LoggingAssistant;
 import org.folio.rest.impl.support.storage.Storage;
 import org.folio.rest.jaxrs.model.Request;
-import org.folio.rest.unit.support.FakeAsyncResult;
 import org.folio.rest.unit.support.SampleParameters;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.stubbing.Stubber;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import static org.folio.rest.unit.support.StubberAssistant.fail;
+import static org.folio.rest.unit.support.StubberAssistant.succeed;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -281,23 +281,6 @@ public class RequestsAPITest {
     verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
 
     verify(mockStorage, times(1)).getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
-  }
-
-  private static <T> Stubber fail(Exception expectedException, int handlerAgumentIndex) {
-    return doAnswer(invocation -> {
-      Handler<AsyncResult<T>> handler = invocation.getArgument(handlerAgumentIndex);
-      handler.handle(FakeAsyncResult.failure(expectedException));
-      return null;
-    });
-  }
-
-  // Difficult to mock responding via a handler, as need to react to a void method
-  private static <T> Stubber succeed(T result, int handlerArgumentIndex) {
-    return doAnswer(invocation -> {
-      Handler<AsyncResult<T>> handler = invocation.getArgument(handlerArgumentIndex);
-      handler.handle(FakeAsyncResult.success(result));
-      return null;
-    });
   }
 
   private static <T> Handler<T> complete(CompletableFuture<T> future) {
