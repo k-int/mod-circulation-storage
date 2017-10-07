@@ -8,6 +8,7 @@ import org.folio.rest.impl.RequestsAPI;
 import org.folio.rest.impl.support.LoggingAssistant;
 import org.folio.rest.impl.support.storage.Storage;
 import org.folio.rest.jaxrs.model.Request;
+import org.folio.rest.unit.support.FakeAsyncResult;
 import org.folio.rest.unit.support.SampleParameters;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -282,70 +283,21 @@ public class RequestsAPITest {
     verify(mockStorage, times(1)).getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
   }
 
-  private <T> Stubber fail(Exception expectedException, int handlerAgumentIndex) {
+  private static <T> Stubber fail(Exception expectedException, int handlerAgumentIndex) {
     return doAnswer(invocation -> {
       Handler<AsyncResult<T>> handler = invocation.getArgument(handlerAgumentIndex);
-      handler.handle(failure(expectedException));
+      handler.handle(FakeAsyncResult.failure(expectedException));
       return null;
     });
   }
 
   // Difficult to mock responding via a handler, as need to react to a void method
-  private <T> Stubber succeed(T result, int handlerArgumentIndex) {
+  private static <T> Stubber succeed(T result, int handlerArgumentIndex) {
     return doAnswer(invocation -> {
       Handler<AsyncResult<T>> handler = invocation.getArgument(handlerArgumentIndex);
-      handler.handle(success(result));
+      handler.handle(FakeAsyncResult.success(result));
       return null;
     });
-  }
-
-  private <T> AsyncResult<T> success(T result) {
-    return new AsyncResult<T>() {
-      @Override
-      public T result() {
-        return result;
-      }
-
-      @Override
-      public Throwable cause() {
-        return null;
-      }
-
-      @Override
-      public boolean succeeded() {
-        return true;
-      }
-
-      @Override
-      public boolean failed() {
-        return false;
-      }
-    };
-
-  }
-
-  private <T> AsyncResult<T> failure(Exception expectedException) {
-    return new AsyncResult<T>() {
-      @Override
-      public T result() {
-        return null;
-      }
-
-      @Override
-      public Throwable cause() {
-        return expectedException;
-      }
-
-      @Override
-      public boolean succeeded() {
-        return false;
-      }
-
-      @Override
-      public boolean failed() {
-        return true;
-      }
-    };
   }
 
   private static <T> Handler<T> complete(CompletableFuture<T> future) {
