@@ -4,11 +4,11 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import org.folio.rest.impl.Headers;
 import org.folio.rest.impl.RequestsAPI;
 import org.folio.rest.impl.support.LoggingAssistant;
 import org.folio.rest.impl.support.storage.Storage;
 import org.folio.rest.jaxrs.model.Request;
+import org.folio.rest.unit.support.SampleParameters;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -16,8 +16,6 @@ import org.mockito.stubbing.Stubber;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -58,8 +56,8 @@ public class RequestsAPITest {
     CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
 
     requestsAPI.deleteRequestStorageRequests(
-      sampleLanguage(),
-      sampleHeaders(),
+      SampleParameters.sampleLanguage(),
+      SampleParameters.sampleHeaders(TENANT_ID),
       complete(requestFinished),
       context);
 
@@ -85,8 +83,8 @@ public class RequestsAPITest {
     CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
 
     requestsAPI.deleteRequestStorageRequests(
-      sampleLanguage(),
-      sampleHeaders(),
+      SampleParameters.sampleLanguage(),
+      SampleParameters.sampleHeaders(TENANT_ID),
       complete(requestFinished),
       context);
 
@@ -116,8 +114,8 @@ public class RequestsAPITest {
     CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
 
     requestsAPI.deleteRequestStorageRequests(
-      sampleLanguage(),
-      sampleHeaders(),
+      SampleParameters.sampleLanguage(),
+      SampleParameters.sampleHeaders(TENANT_ID),
       complete(requestFinished),
       context);
 
@@ -143,8 +141,8 @@ public class RequestsAPITest {
     CompletableFuture<AsyncResult<Response>> requestFinished = new CompletableFuture<>();
 
     requestsAPI.deleteRequestStorageRequests(
-      sampleLanguage(),
-      sampleHeaders(),
+      SampleParameters.sampleLanguage(),
+      SampleParameters.sampleHeaders(TENANT_ID),
       complete(requestFinished),
       context);
 
@@ -174,8 +172,8 @@ public class RequestsAPITest {
 
     requestsAPI.getRequestStorageRequests(
       0, 10, "",
-      sampleLanguage(),
-      sampleHeaders(),
+      SampleParameters.sampleLanguage(),
+      SampleParameters.sampleHeaders(TENANT_ID),
       complete(requestFinished),
       context);
 
@@ -203,8 +201,8 @@ public class RequestsAPITest {
 
     requestsAPI.getRequestStorageRequests(
       0, 10, "",
-      sampleLanguage(),
-      sampleHeaders(),
+      SampleParameters.sampleLanguage(),
+      SampleParameters.sampleHeaders(TENANT_ID),
       complete(requestFinished),
       context);
 
@@ -236,8 +234,8 @@ public class RequestsAPITest {
 
     requestsAPI.getRequestStorageRequests(
       0, 10, "",
-      sampleLanguage(),
-      sampleHeaders(),
+      SampleParameters.sampleLanguage(),
+      SampleParameters.sampleHeaders(TENANT_ID),
       complete(requestFinished),
       context);
 
@@ -268,8 +266,8 @@ public class RequestsAPITest {
 
     requestsAPI.getRequestStorageRequests(
       0, 10, "",
-      sampleLanguage(),
-      sampleHeaders(),
+      SampleParameters.sampleLanguage(),
+      SampleParameters.sampleHeaders(TENANT_ID),
       complete(requestFinished),
       context);
 
@@ -348,18 +346,6 @@ public class RequestsAPITest {
         return true;
       }
     };
-  }
-
-  private Map<String, String> sampleHeaders() {
-    HashMap<String, String> headers = new HashMap<>();
-
-    headers.put(Headers.TENANT_HEADER, TENANT_ID);
-
-    return headers;
-  }
-
-  private String sampleLanguage() {
-    return "";
   }
 
   private static <T> Handler<T> complete(CompletableFuture<T> future) {
