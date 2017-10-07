@@ -6,6 +6,8 @@ import io.vertx.core.Handler;
 import java.util.function.Consumer;
 
 public class ResultHandler {
+  private ResultHandler() {}
+
   public static <T> Handler<AsyncResult<T>> filter(
     Consumer<T> onSuccess,
     Consumer<Throwable> onError) {
