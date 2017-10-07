@@ -5,6 +5,13 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 
 public interface Storage {
+  void create(
+    String id,
+    Object entity,
+    Context context,
+    String tenantId,
+    Handler<AsyncResult<String>> handleResult) throws Exception;
+
   void deleteAll(
     Context context,
     String tenantId,

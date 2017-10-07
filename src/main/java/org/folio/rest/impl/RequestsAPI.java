@@ -13,7 +13,6 @@ import org.folio.rest.impl.support.storage.PostgreSQLStorage;
 import org.folio.rest.impl.support.storage.Storage;
 import org.folio.rest.jaxrs.model.Request;
 import org.folio.rest.jaxrs.model.Requests;
-import org.folio.rest.jaxrs.resource.LoanPolicyStorageResource;
 import org.folio.rest.jaxrs.resource.RequestStorageResource;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -133,56 +132,40 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    try {
-      PostgresClient postgresClient =
-        PostgresClient.getInstance(
-          vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
+      asyncResultHandler,
+      "Unknown failure cause when attempting to create a request",
+      (message) -> PostRequestStorageRequestsResponse
+        .withPlainInternalServerError(message));
 
+    try {
       vertxContext.runOnContext(v -> {
         try {
           if(entity.getId() == null) {
             entity.setId(UUID.randomUUID().toString());
           }
 
-          postgresClient.save(REQUEST_TABLE, entity.getId(), entity,
-            reply -> {
-              try {
-                if(reply.succeeded()) {
+          storage.create(entity.getId(), entity, vertxContext, tenantId,
+            ResultHandler.filter(r -> {
+                try {
                   OutStream stream = new OutStream();
                   stream.setData(entity);
 
-                  asyncResultHandler.handle(
-                    io.vertx.core.Future.succeededFuture(
+                  respond(asyncResultHandler,
                       PostRequestStorageRequestsResponse
-                        .withJsonCreated(reply.result(), stream)));
+                        .withJsonCreated(r, stream));
                 }
-                else {
-                  loggingAssistant.logError(log, reply.cause());
-                  asyncResultHandler.handle(
-                    io.vertx.core.Future.succeededFuture(
-                      PostRequestStorageRequestsResponse
-                        .withPlainInternalServerError(reply.cause().toString())));
+                catch(Exception e) {
+                  onExceptionalFailure.accept(e);
                 }
-              } catch (Exception e) {
-                loggingAssistant.logError(log, e);
-                asyncResultHandler.handle(
-                  io.vertx.core.Future.succeededFuture(
-                    PostRequestStorageRequestsResponse
-                      .withPlainInternalServerError(e.getMessage())));
-              }
-            });
+              },
+              onExceptionalFailure));
         } catch (Exception e) {
-          loggingAssistant.logError(log, e);
-          asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-            PostRequestStorageRequestsResponse
-              .withPlainInternalServerError(e.getMessage())));
+          onExceptionalFailure.accept(e);
         }
       });
     } catch (Exception e) {
-      loggingAssistant.logError(log, e);
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-        LoanPolicyStorageResource.PostLoanPolicyStorageLoanPoliciesResponse
-          .withPlainInternalServerError(e.getMessage())));
+      onExceptionalFailure.accept(e);
     }
   }
 

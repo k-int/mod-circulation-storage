@@ -20,6 +20,20 @@ public class PostgreSQLStorage implements Storage {
   }
 
   @Override
+  public void create(
+    String id,
+    Object entity,
+    Context context,
+    String tenantId,
+    Handler<AsyncResult<String>> handleResult) throws Exception {
+
+    PostgresClient postgresClient = PostgresClient.getInstance(
+      context.owner(), TenantTool.calculateTenantId(tenantId));
+
+    postgresClient.save(tableName, id, entity, handleResult);
+  }
+
+  @Override
   public void deleteAll(
     Context context,
     String tenantId,
