@@ -88,57 +88,38 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
+      asyncResultHandler,
+      "Unknown failure cause when attempting to get all requests",
+      (message) -> GetRequestStorageRequestsResponse
+        .withPlainInternalServerError(message));
+
     try {
       vertxContext.runOnContext(v -> {
         try {
-          storage.getAll(offset, limit, query, vertxContext, tenantId, reply -> {
-            try {
-              if (reply.succeeded()) {
-                List<Request> requests = (List<Request>) reply.result()[0];
+          storage.getAll(offset, limit, query, vertxContext, tenantId,
+            ResultHandler.filter(r -> {
+                try {
+                  List<Request> requests = (List<Request>) r[0];
 
-                Requests pagedRequests = new Requests();
-                pagedRequests.setRequests(requests);
-                pagedRequests.setTotalRecords((Integer) reply.result()[1]);
+                  Requests pagedRequests = new Requests();
+                  pagedRequests.setRequests(requests);
+                  pagedRequests.setTotalRecords((Integer) r[1]);
 
-                asyncResultHandler.handle(Future.succeededFuture(
-                  GetRequestStorageRequestsResponse.withJsonOK(pagedRequests)));
-              } else {
-                if(reply.cause() != null) {
-                  loggingAssistant.logError(log, reply.cause());
-                  asyncResultHandler.handle(Future.succeededFuture(
-                    LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
-                      withPlainInternalServerError(reply.cause().getMessage())));
+                  respond(asyncResultHandler,
+                    GetRequestStorageRequestsResponse.withJsonOK(pagedRequests));
                 }
-                else {
-                  loggingAssistant.logError(log,
-                    "Unknown failure cause when attempting to get all requests");
-                  
-                  asyncResultHandler.handle(Future.succeededFuture(
-                    LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
-                      withPlainInternalServerError(
-                        "Unknown failure cause when attempting to delete all requests")));
+                catch(Exception e) {
+                  onExceptionalFailure.accept(e);
                 }
-              }
-            } catch (Exception e) {
-              loggingAssistant.logError(log, e);
-              asyncResultHandler.handle(Future.succeededFuture(
-                LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
-                  withPlainInternalServerError(e.getMessage())));
-            }
-          });
-
+              },
+              onExceptionalFailure));
         } catch (Exception e) {
-          loggingAssistant.logError(log, e);
-          asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-            LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
-              withPlainInternalServerError(e.getMessage())));
+          onExceptionalFailure.accept(e);
         }
       });
     } catch (Exception e) {
-      loggingAssistant.logError(log, e);
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-        LoanPolicyStorageResource.GetLoanPolicyStorageLoanPoliciesResponse.
-          withPlainInternalServerError(e.getMessage())));
+      onExceptionalFailure.accept(e);
     }
   }
 
