@@ -1,6 +1,7 @@
 package org.folio.rest.unit;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.ext.sql.UpdateResult;
 import org.folio.rest.impl.RequestsAPI;
 import org.folio.rest.impl.support.LoggingAssistant;
 import org.folio.rest.impl.support.storage.Storage;
@@ -27,7 +28,7 @@ import static org.mockito.Mockito.*;
 public class RequestsPutTest extends AbstractVertxUnitTest {
 
   @Test
-  public void shouldRespondCreatedWhenRequestCreated() throws Exception {
+  public void shouldRespondWithNoContentWhenRequestCreated() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
 
@@ -40,7 +41,7 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
 
     succeed("", 4).when(mockStorage)
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+      .create(eq(expectedId), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
 
     AsyncResult<Response> response = getOnCompletion(f ->
       requestsAPI.putRequestStorageRequestsByRequestId(
@@ -62,12 +63,63 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
 
     verify(mockStorage, times(1))
       .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+
+    verify(mockStorage, never())
+      .update(eq(expectedId), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+  }
+
+  @Test
+  public void shouldRespondWithNoContentWhenRequestUpdated() throws Exception {
+    LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
+    Storage mockStorage = mock(Storage.class);
+
+    RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
+
+    String expectedId = UUID.randomUUID().toString();
+    Request exampleRequest = new Request().withId(expectedId);
+
+    succeed(singleRecordFound(exampleRequest), 3).when(mockStorage)
+      .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
+
+    succeed(new UpdateResult(), 4).when(mockStorage)
+      .update(eq(expectedId), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+
+    AsyncResult<Response> response = getOnCompletion(f ->
+      requestsAPI.putRequestStorageRequestsByRequestId(
+        expectedId,
+        SampleParameters.sampleLanguage(),
+        exampleRequest,
+        SampleParameters.sampleHeaders(TENANT_ID),
+        complete(f),
+        context));
+
+    assertThat(String.format("Should succeed: %s", response.cause()),
+      response.result().getStatus(), is(204));
+
+    verify(mockLogAssistant, never()).logError(any(), any(String.class));
+    verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
+
+    verify(mockStorage, times(1))
+      .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
+
+    verify(mockStorage, times(1))
+      .update(eq(expectedId), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+
+    verify(mockStorage, never())
+      .create(eq(expectedId), any(), eq(context), eq(TENANT_ID), any());
   }
 
   private Object[] noRecordsFound() {
     Object[] result = new Object[2];
     result[0] = new ArrayList<>(Arrays.asList());
     result[1] = 0;
+    return result;
+  }
+
+  private <T> Object[] singleRecordFound(T record) {
+    Object[] result = new Object[2];
+    result[0] = new ArrayList<>(Arrays.asList(record));
+    result[1] = 1;
     return result;
   }
 }

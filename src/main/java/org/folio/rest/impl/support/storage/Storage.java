@@ -37,4 +37,11 @@ public interface Storage {
     Context context,
     String tenantId,
     Handler<AsyncResult<UpdateResult>> handleResult) throws Exception;
+
+  void update(
+    String id,
+    Object entity,
+    Context context,
+    String tenantId,
+    Handler<AsyncResult<UpdateResult>> handleResult) throws Exception;
 }

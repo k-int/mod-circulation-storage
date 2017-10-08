@@ -100,6 +100,21 @@ public class PostgreSQLStorage implements Storage {
     postgresClient.delete(tableName, equalityCriteria(id), handleResult);
   }
 
+  @Override
+  public void update(
+    String id,
+    Object entity,
+    Context context,
+    String tenantId,
+    Handler<AsyncResult<UpdateResult>> handleResult) throws Exception {
+
+    PostgresClient postgresClient = PostgresClient.getInstance(
+      context.owner(), TenantTool.calculateTenantId(tenantId));
+
+    postgresClient.update(tableName, entity, equalityCriteria(id), true,
+      handleResult);
+  }
+
   private Criterion equalityCriteria(String id) {
     Criteria a = new Criteria();
 

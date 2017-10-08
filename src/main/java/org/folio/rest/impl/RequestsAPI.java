@@ -15,11 +15,7 @@ import org.folio.rest.impl.support.storage.Storage;
 import org.folio.rest.jaxrs.model.Request;
 import org.folio.rest.jaxrs.model.Requests;
 import org.folio.rest.jaxrs.resource.RequestStorageResource;
-import org.folio.rest.persist.Criteria.Criteria;
-import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.OutStream;
-import org.folio.rest.tools.utils.TenantTool;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -262,61 +258,42 @@ public class RequestsAPI implements RequestStorageResource {
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
     try {
-      PostgresClient postgresClient =
-        PostgresClient.getInstance(
-          vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
-
-      Criteria a = new Criteria();
-
-      a.addField("'id'");
-      a.setOperation("=");
-      a.setValue(requestId);
-
-      Criterion criterion = new Criterion(a);
-
       vertxContext.runOnContext(v -> {
         try {
           storage.getById(requestId, vertxContext, tenantId,
             reply -> {
               if(reply.succeeded()) {
-                List<Request> requestList = (List<Request>) reply.result()[0];
+                SingleResult getResult = SingleResult.from(reply.result());
 
-                if (requestList.size() == 1) {
+                if (getResult.isFound()) {
                   try {
-                    postgresClient.update(REQUEST_TABLE, entity, criterion,
-                      true,
+                    storage.update(requestId, entity, vertxContext, tenantId,
                       update -> {
                         try {
                           if(update.succeeded()) {
-                            OutStream stream = new OutStream();
-                            stream.setData(entity);
-
-                            asyncResultHandler.handle(
-                              Future.succeededFuture(
+                            respond(asyncResultHandler,
                                 PutRequestStorageRequestsByRequestIdResponse
-                                  .withNoContent()));
+                                  .withNoContent());
                           }
                           else {
                             loggingAssistant.logError(log, update.cause());
-                            asyncResultHandler.handle(
-                              Future.succeededFuture(
+                            respond(asyncResultHandler,
                                 PutRequestStorageRequestsByRequestIdResponse
                                   .withPlainInternalServerError(
-                                    update.cause().getMessage())));
+                                    update.cause().getMessage()));
                           }
                         } catch (Exception e) {
                           loggingAssistant.logError(log, e);
-                          asyncResultHandler.handle(
-                            Future.succeededFuture(
+                          respond(asyncResultHandler,
                               PutRequestStorageRequestsByRequestIdResponse
-                                .withPlainInternalServerError(e.getMessage())));
+                                .withPlainInternalServerError(e.getMessage()));
                         }
                       });
                   } catch (Exception e) {
                     loggingAssistant.logError(log, e);
-                    asyncResultHandler.handle(Future.succeededFuture(
+                    respond(asyncResultHandler,
                       PutRequestStorageRequestsByRequestIdResponse
-                        .withPlainInternalServerError(e.getMessage())));
+                        .withPlainInternalServerError(e.getMessage()));
                   }
                 }
                 else {
@@ -325,58 +302,51 @@ public class RequestsAPI implements RequestStorageResource {
                       save -> {
                         try {
                           if(save.succeeded()) {
-                            OutStream stream = new OutStream();
-                            stream.setData(entity);
-
-                            asyncResultHandler.handle(
-                              Future.succeededFuture(
+                            respond(asyncResultHandler,
                                 PutRequestStorageRequestsByRequestIdResponse
-                                  .withNoContent()));
+                                  .withNoContent());
                           }
                           else {
                             loggingAssistant.logError(log, save.cause());
-                            asyncResultHandler.handle(
-                              Future.succeededFuture(
+                            respond(asyncResultHandler,
                                 PutRequestStorageRequestsByRequestIdResponse
                                   .withPlainInternalServerError(
-                                    save.cause().getMessage())));
+                                    save.cause().getMessage()));
                           }
                         } catch (Exception e) {
                           loggingAssistant.logError(log, e);
-                          asyncResultHandler.handle(
-                            Future.succeededFuture(
+                          respond(asyncResultHandler,
                               PutRequestStorageRequestsByRequestIdResponse
-                                .withPlainInternalServerError(e.getMessage())));
+                                .withPlainInternalServerError(e.getMessage()));
                         }
                       });
                   } catch (Exception e) {
-                    loggingAssistant.logError(log, e);
-                    asyncResultHandler.handle(Future.succeededFuture(
+                    respond(asyncResultHandler,
                       PutRequestStorageRequestsByRequestIdResponse
-                        .withPlainInternalServerError(e.getMessage())));
+                        .withPlainInternalServerError(e.getMessage()));
                   }
                 }
               } else {
                 loggingAssistant.logError(log, reply.cause());
-                asyncResultHandler.handle(Future.succeededFuture(
+                respond(asyncResultHandler,
                   PutRequestStorageRequestsByRequestIdResponse
-                    .withPlainInternalServerError(reply.cause().getMessage())));
+                    .withPlainInternalServerError(reply.cause().getMessage()));
               }
             });
         } catch (Exception e) {
           loggingAssistant.logError(log, e);
-          asyncResultHandler.handle(Future.succeededFuture(
+          respond(asyncResultHandler,
             PutRequestStorageRequestsByRequestIdResponse
-              .withPlainInternalServerError(e.getMessage())));
+              .withPlainInternalServerError(e.getMessage()));
         }
       });
     } catch (Exception e) {
       loggingAssistant.logError(log, e);
-      asyncResultHandler.handle(Future.succeededFuture(
+      respond(asyncResultHandler,
         PutRequestStorageRequestsByRequestIdResponse
-          .withPlainInternalServerError(e.getMessage())));
+          .withPlainInternalServerError(e.getMessage()));
     }
-  } 
+  }
 
   private void respond(
     Handler<AsyncResult<Response>> handler,
