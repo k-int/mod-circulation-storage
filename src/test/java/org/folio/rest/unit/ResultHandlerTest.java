@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -56,7 +57,25 @@ public class ResultHandlerTest extends AbstractVertxUnitTest {
   }
 
   @Test
-  public void shouldExecuteFailureConsumerWhenNullExceptionThrownDuringHandling()
+  public void shouldExecuteFailureConsumerWhenNullFailureCauseIsReported()
+    throws InterruptedException, ExecutionException, TimeoutException {
+
+    CompletableFuture<Throwable> consumerCalled = new CompletableFuture<>();
+
+    Handler<AsyncResult<String>> handler = ResultHandler.filter(
+      v -> { },
+      e -> consumerCalled.complete(e)
+    );
+
+    handler.handle(FakeAsyncResult.failure(null));
+
+    Throwable result = consumerCalled.get(1, TimeUnit.SECONDS);
+
+    assertThat(result, is(nullValue()));
+  }
+
+  @Test
+  public void shouldExecuteFailureConsumerWhenAsyncResultIsNull()
     throws InterruptedException, ExecutionException, TimeoutException {
 
     CompletableFuture<Throwable> consumerCalled = new CompletableFuture<>();
@@ -71,5 +90,42 @@ public class ResultHandlerTest extends AbstractVertxUnitTest {
     Throwable result = consumerCalled.get(1, TimeUnit.SECONDS);
 
     assertThat(result, is(instanceOf(Exception.class)));
+  }
+
+  @Test
+  public void shouldExecuteFailureConsumerWhenSuccessConsumerThrowsException()
+    throws InterruptedException, ExecutionException, TimeoutException {
+
+    CompletableFuture<Throwable> consumerCalled = new CompletableFuture<>();
+    Exception expectedException = new Exception("Something went wrong");
+
+    Handler<AsyncResult<String>> handler = ResultHandler.filter(
+      v -> { throw expectedException; },
+      e -> consumerCalled.complete(e)
+    );
+
+    handler.handle(FakeAsyncResult.success("Success"));
+
+    Throwable result = consumerCalled.get(1, TimeUnit.SECONDS);
+
+    assertThat(result, is(expectedException));
+  }
+
+  @Test
+  public void shouldExecuteFailureConsumerWhenSuccessWithNullResult()
+    throws InterruptedException, ExecutionException, TimeoutException {
+
+    CompletableFuture<Throwable> consumerCalled = new CompletableFuture<>();
+
+    Handler<AsyncResult<String>> handler = ResultHandler.filter(
+      v -> System.out.print(v.toString()),
+      e -> consumerCalled.complete(e)
+    );
+
+    handler.handle(FakeAsyncResult.success(null));
+
+    Throwable result = consumerCalled.get(1, TimeUnit.SECONDS);
+
+    assertThat(result, is(instanceOf(NullPointerException.class)));
   }
 }
