@@ -2,6 +2,7 @@ package org.folio.rest.impl.support;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import org.folio.rest.support.ThrowingConsumer;
 
 import java.util.function.Consumer;
 
@@ -9,7 +10,7 @@ public class ResultHandler {
   private ResultHandler() {}
 
   public static <T> Handler<AsyncResult<T>> filter(
-    Consumer<T> onSuccess,
+    ThrowingConsumer<T, Exception> onSuccess,
     Consumer<Throwable> onError) {
 
     return result -> {
