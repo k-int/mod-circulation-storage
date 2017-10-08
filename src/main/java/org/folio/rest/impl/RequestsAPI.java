@@ -62,7 +62,8 @@ public class RequestsAPI implements RequestStorageResource {
     vertxContext.runOnContext(v -> {
       try {
         storage.deleteAll(vertxContext, tenantId,
-          ResultHandler.filter(r -> respond(asyncResultHandler,
+          ResultHandler.filter(
+            r -> respond(asyncResultHandler,
               DeleteRequestStorageRequestsResponse.withNoContent()),
             onExceptionalFailure));
       }
@@ -94,20 +95,16 @@ public class RequestsAPI implements RequestStorageResource {
       vertxContext.runOnContext(v -> {
         try {
           storage.getAll(offset, limit, query, vertxContext, tenantId,
-            ResultHandler.filter(r -> {
-                try {
-                  List<Request> requests = (List<Request>) r[0];
+            ResultHandler.filter(
+              r -> {
+                List<Request> requests = (List<Request>) r[0];
 
-                  Requests pagedRequests = new Requests();
-                  pagedRequests.setRequests(requests);
-                  pagedRequests.setTotalRecords((Integer) r[1]);
+                Requests pagedRequests = new Requests();
+                pagedRequests.setRequests(requests);
+                pagedRequests.setTotalRecords((Integer) r[1]);
 
-                  respond(asyncResultHandler,
-                    GetRequestStorageRequestsResponse.withJsonOK(pagedRequests));
-                }
-                catch(Exception e) {
-                  onExceptionalFailure.accept(e);
-                }
+                respond(asyncResultHandler,
+                  GetRequestStorageRequestsResponse.withJsonOK(pagedRequests));
               },
               onExceptionalFailure));
         } catch (Exception e) {
@@ -143,18 +140,14 @@ public class RequestsAPI implements RequestStorageResource {
           }
 
           storage.create(entity.getId(), entity, vertxContext, tenantId,
-            ResultHandler.filter(r -> {
-                try {
-                  OutStream stream = new OutStream();
-                  stream.setData(entity);
+            ResultHandler.filter(
+              r -> {
+                OutStream stream = new OutStream();
+                stream.setData(entity);
 
-                  respond(asyncResultHandler,
-                      PostRequestStorageRequestsResponse
-                        .withJsonCreated(r, stream));
-                }
-                catch(Exception e) {
-                  onExceptionalFailure.accept(e);
-                }
+                respond(asyncResultHandler,
+                    PostRequestStorageRequestsResponse
+                      .withJsonCreated(r, stream));
               },
               onExceptionalFailure));
         } catch (Exception e) {
@@ -186,24 +179,22 @@ public class RequestsAPI implements RequestStorageResource {
       vertxContext.runOnContext(v -> {
             try {
               storage.getById(requestId, vertxContext, tenantId,
-                ResultHandler.filter(r -> {
-                  try {
-                      SingleResult<Request> result = SingleResult.from(r);
+                ResultHandler.filter(
+                  r -> {
+                    SingleResult<Request> result = SingleResult.from(r);
 
-                      if (result.isFound()) {
-                        respond(asyncResultHandler,
+                    if (result.isFound()) {
+                      respond(asyncResultHandler,
+                        GetRequestStorageRequestsByRequestIdResponse.
+                        withJsonOK(result.getResult()));
+                    }
+                    else {
+                      respond(asyncResultHandler,
                           GetRequestStorageRequestsByRequestIdResponse.
-                          withJsonOK(result.getResult()));
-                      }
-                      else {
-                        respond(asyncResultHandler,
-                            GetRequestStorageRequestsByRequestIdResponse.
-                              withPlainNotFound("Not Found"));
-                      }
-                  } catch (Exception e) {
-                    onExceptionalFailure.accept(e);
-                  }
-              }, onExceptionalFailure));
+                            withPlainNotFound("Not Found"));
+                    }
+                  },
+                onExceptionalFailure));
         } catch (Exception e) {
           onExceptionalFailure.accept(e);
         }
