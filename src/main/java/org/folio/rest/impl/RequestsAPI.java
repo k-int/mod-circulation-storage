@@ -305,31 +305,22 @@ public class RequestsAPI implements RequestStorageResource {
                 else {
                   try {
                     storage.create(entity.getId(), entity, vertxContext, tenantId,
-                      save -> {
+                      saveReply -> {
                         try {
-                          if(save.succeeded()) {
+                          if(saveReply.succeeded()) {
                             respond(asyncResultHandler,
                                 PutRequestStorageRequestsByRequestIdResponse
                                   .withNoContent());
                           }
                           else {
-                            loggingAssistant.logError(log, save.cause());
-                            respond(asyncResultHandler,
-                                PutRequestStorageRequestsByRequestIdResponse
-                                  .withPlainInternalServerError(
-                                    save.cause().getMessage()));
+                            onExceptionalFailure.accept(saveReply.cause());
                           }
                         } catch (Exception e) {
-                          loggingAssistant.logError(log, e);
-                          respond(asyncResultHandler,
-                              PutRequestStorageRequestsByRequestIdResponse
-                                .withPlainInternalServerError(e.getMessage()));
+                          onExceptionalFailure.accept(e);
                         }
                       });
                   } catch (Exception e) {
-                    respond(asyncResultHandler,
-                      PutRequestStorageRequestsByRequestIdResponse
-                        .withPlainInternalServerError(e.getMessage()));
+                    onExceptionalFailure.accept(e);
                   }
                 }
               } else {
