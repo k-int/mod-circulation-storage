@@ -276,7 +276,7 @@ public class RequestsAPI implements RequestStorageResource {
 
       vertxContext.runOnContext(v -> {
         try {
-          postgresClient.get(REQUEST_TABLE, Request.class, criterion, true, false,
+          storage.getById(requestId, vertxContext, tenantId,
             reply -> {
               if(reply.succeeded()) {
                 List<Request> requestList = (List<Request>) reply.result()[0];
@@ -321,7 +321,7 @@ public class RequestsAPI implements RequestStorageResource {
                 }
                 else {
                   try {
-                    postgresClient.save(REQUEST_TABLE, entity.getId(), entity,
+                    storage.create(entity.getId(), entity, vertxContext, tenantId,
                       save -> {
                         try {
                           if(save.succeeded()) {
@@ -376,7 +376,7 @@ public class RequestsAPI implements RequestStorageResource {
         PutRequestStorageRequestsByRequestIdResponse
           .withPlainInternalServerError(e.getMessage())));
     }
-  }
+  } 
 
   private void respond(
     Handler<AsyncResult<Response>> handler,
