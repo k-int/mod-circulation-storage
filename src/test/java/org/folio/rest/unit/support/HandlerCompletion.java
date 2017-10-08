@@ -13,7 +13,7 @@ public class HandlerCompletion {
   }
 
   public static <T, E extends Exception> T getOnCompletion(
-    ThrowingConsumer<T, E> throwingConsumer)
+    ThrowingConsumer<CompletableFuture<T>, E> throwingConsumer)
     throws InterruptedException, ExecutionException, TimeoutException {
 
       CompletableFuture<T> finished = new CompletableFuture<>();
