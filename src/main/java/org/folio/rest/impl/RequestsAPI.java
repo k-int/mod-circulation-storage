@@ -258,37 +258,27 @@ public class RequestsAPI implements RequestStorageResource {
       vertxContext.runOnContext(v -> {
         try {
           storage.getById(requestId, vertxContext, tenantId,
-            getReply -> {
-              if(getReply.succeeded()) {
-                SingleResult getResult = SingleResult.from(getReply.result());
+            ResultHandler.filter(
+              getAsyncResult -> {
+                SingleResult getResult = SingleResult.from(getAsyncResult);
 
                 if (getResult.isFound()) {
-                  try {
-                    storage.update(requestId, entity, vertxContext, tenantId,
-                      ResultHandler.filter(
-                        r -> respond(asyncResultHandler,
-                          PutRequestStorageRequestsByRequestIdResponse
+                  storage.update(requestId, entity, vertxContext, tenantId,
+                    ResultHandler.filter(
+                      r -> respond(asyncResultHandler,
+                        PutRequestStorageRequestsByRequestIdResponse
                           .withNoContent()),
-                        onExceptionalFailure));
-                  } catch (Exception e) {
-                    onExceptionalFailure.accept(e);
-                  }
+                      onExceptionalFailure));
                 }
                 else {
-                  try {
-                    storage.create(entity.getId(), entity, vertxContext, tenantId,
-                      ResultHandler.filter(
-                        r -> respond(asyncResultHandler,
-                          PutRequestStorageRequestsByRequestIdResponse.withNoContent()),
-                        onExceptionalFailure));
-                  } catch (Exception e) {
-                    onExceptionalFailure.accept(e);
-                  }
+                  storage.create(entity.getId(), entity, vertxContext, tenantId,
+                    ResultHandler.filter(
+                      r -> respond(asyncResultHandler,
+                        PutRequestStorageRequestsByRequestIdResponse.withNoContent()),
+                      onExceptionalFailure));
                 }
-              } else {
-                onExceptionalFailure.accept(getReply.cause());
-              }
-            });
+              },
+              onExceptionalFailure));
         } catch (Exception e) {
           onExceptionalFailure.accept(e);
         }
