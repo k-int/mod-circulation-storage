@@ -257,13 +257,19 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
+      asyncResultHandler,
+      "Unknown failure cause when attempting to create or update a request by ID",
+      (message) -> PostRequestStorageRequestsResponse
+        .withPlainInternalServerError(message));
+
     try {
       vertxContext.runOnContext(v -> {
         try {
           storage.getById(requestId, vertxContext, tenantId,
-            reply -> {
-              if(reply.succeeded()) {
-                SingleResult getResult = SingleResult.from(reply.result());
+            getReply -> {
+              if(getReply.succeeded()) {
+                SingleResult getResult = SingleResult.from(getReply.result());
 
                 if (getResult.isFound()) {
                   try {
@@ -327,17 +333,11 @@ public class RequestsAPI implements RequestStorageResource {
                   }
                 }
               } else {
-                loggingAssistant.logError(log, reply.cause());
-                respond(asyncResultHandler,
-                  PutRequestStorageRequestsByRequestIdResponse
-                    .withPlainInternalServerError(reply.cause().getMessage()));
+                onExceptionalFailure.accept(getReply.cause());
               }
             });
         } catch (Exception e) {
-          loggingAssistant.logError(log, e);
-          respond(asyncResultHandler,
-            PutRequestStorageRequestsByRequestIdResponse
-              .withPlainInternalServerError(e.getMessage()));
+          onExceptionalFailure.accept(e);
         }
       });
     } catch (Exception e) {
