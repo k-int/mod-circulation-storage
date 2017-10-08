@@ -1,4 +1,4 @@
-package org.folio.rest.unit;
+package org.folio.rest.unit.requests;
 
 import io.vertx.core.AsyncResult;
 import org.folio.rest.impl.RequestsAPI;
@@ -10,7 +10,6 @@ import org.folio.rest.unit.support.SampleParameters;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 
 import static org.folio.rest.unit.support.HandlerCompletion.complete;
 import static org.folio.rest.unit.support.HandlerCompletion.getOnCompletion;
@@ -21,7 +20,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-public class RequestsGetAllTest extends AbstractVertxUnitTest {
+public class RequestsPostTest extends AbstractVertxUnitTest {
 
   @Test
   public void shouldRespondWithErrorWhenKnownFailureOccurs() throws Exception {
@@ -32,13 +31,15 @@ public class RequestsGetAllTest extends AbstractVertxUnitTest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    fail(expectedException, 5).when(mockStorage)
-      .getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
+    Request exampleRequest = new Request();
 
-    AsyncResult<Response> response = getOnCompletion(
-      f -> requestsAPI.getRequestStorageRequests(
-        0, 10, "",
+    fail(expectedException, 4).when(mockStorage)
+      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+
+    AsyncResult<Response> response = getOnCompletion(f ->
+      requestsAPI.postRequestStorageRequests(
         SampleParameters.sampleLanguage(),
+        exampleRequest,
         SampleParameters.sampleHeaders(TENANT_ID),
         complete(f),
         context));
@@ -49,7 +50,7 @@ public class RequestsGetAllTest extends AbstractVertxUnitTest {
     verify(mockLogAssistant, never()).logError(any(), any(String.class));
 
     verify(mockStorage, times(1))
-      .getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
+      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
   }
 
   @Test
@@ -59,13 +60,15 @@ public class RequestsGetAllTest extends AbstractVertxUnitTest {
 
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
-    fail(null, 5).when(mockStorage)
-      .getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
+    Request exampleRequest = new Request();
 
-    AsyncResult<Response> response = getOnCompletion(
-      f -> requestsAPI.getRequestStorageRequests(
-        0, 10, "",
+    fail(null, 4).when(mockStorage)
+      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+
+    AsyncResult<Response> response = getOnCompletion(f ->
+      requestsAPI.postRequestStorageRequests(
         SampleParameters.sampleLanguage(),
+        exampleRequest,
         SampleParameters.sampleHeaders(TENANT_ID),
         complete(f),
         context));
@@ -73,12 +76,12 @@ public class RequestsGetAllTest extends AbstractVertxUnitTest {
     assertThat(response.result().getStatus(), is(500));
 
     verify(mockLogAssistant, times(1)).logError(any(),
-      eq("Unknown failure cause when attempting to get all requests"));
+      eq("Unknown failure cause when attempting to create a request"));
 
     verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
 
     verify(mockStorage, times(1))
-      .getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
+      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
   }
 
   @Test
@@ -90,13 +93,15 @@ public class RequestsGetAllTest extends AbstractVertxUnitTest {
 
     Exception expectedException = new Exception("Sample Failure");
 
+    Request exampleRequest = new Request();
+
     doThrow(expectedException).when(mockStorage)
-      .getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
+      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
 
     AsyncResult<Response> response = getOnCompletion(f ->
-      requestsAPI.getRequestStorageRequests(
-        0, 10, "",
+      requestsAPI.postRequestStorageRequests(
         SampleParameters.sampleLanguage(),
+        exampleRequest,
         SampleParameters.sampleHeaders(TENANT_ID),
         complete(f),
         context));
@@ -107,38 +112,36 @@ public class RequestsGetAllTest extends AbstractVertxUnitTest {
     verify(mockLogAssistant, never()).logError(any(), any(String.class));
 
     verify(mockStorage, times(1))
-      .getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
+      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
   }
 
   @Test
-  public void shouldRespondOkWhenRequestsFound() throws Exception {
+  public void shouldRespondCreatedWhenRequestCreated() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
 
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
-    Object[] result = new Object[2];
-    result[0] = new ArrayList<Request>();
-    result[1] = 0;
+    Request exampleRequest = new Request();
 
-    succeed(result, 5).when(mockStorage)
-      .getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
+    succeed("", 4).when(mockStorage)
+      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
 
     AsyncResult<Response> response = getOnCompletion(f ->
-      requestsAPI.getRequestStorageRequests(
-        0, 10, "",
+      requestsAPI.postRequestStorageRequests(
         SampleParameters.sampleLanguage(),
+        exampleRequest,
         SampleParameters.sampleHeaders(TENANT_ID),
         complete(f),
         context));
 
     assertThat(String.format("Should succeed: %s", response.cause()),
-      response.result().getStatus(), is(200));
+      response.result().getStatus(), is(201));
 
     verify(mockLogAssistant, never()).logError(any(), any(String.class));
     verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
 
     verify(mockStorage, times(1))
-      .getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
+      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
   }
 }

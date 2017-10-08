@@ -1,10 +1,9 @@
-package org.folio.rest.unit;
+package org.folio.rest.unit.requests;
 
 import io.vertx.core.AsyncResult;
 import org.folio.rest.impl.RequestsAPI;
 import org.folio.rest.impl.support.LoggingAssistant;
 import org.folio.rest.impl.support.storage.Storage;
-import org.folio.rest.jaxrs.model.Request;
 import org.folio.rest.unit.support.AbstractVertxUnitTest;
 import org.folio.rest.unit.support.SampleParameters;
 import org.junit.Test;
@@ -20,7 +19,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-public class RequestsPostTest extends AbstractVertxUnitTest {
+public class RequestsDeleteAllTest extends AbstractVertxUnitTest {
 
   @Test
   public void shouldRespondWithErrorWhenKnownFailureOccurs() throws Exception {
@@ -31,15 +30,11 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    Request exampleRequest = new Request();
-
-    fail(expectedException, 4).when(mockStorage)
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+    fail(expectedException, 2).when(mockStorage).deleteAll(eq(context), eq(TENANT_ID), any());
 
     AsyncResult<Response> response = getOnCompletion(f ->
-      requestsAPI.postRequestStorageRequests(
+      requestsAPI.deleteRequestStorageRequests(
         SampleParameters.sampleLanguage(),
-        exampleRequest,
         SampleParameters.sampleHeaders(TENANT_ID),
         complete(f),
         context));
@@ -49,8 +44,7 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
     verify(mockLogAssistant, times(1)).logError(any(), eq(expectedException));
     verify(mockLogAssistant, never()).logError(any(), any(String.class));
 
-    verify(mockStorage, times(1))
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+    verify(mockStorage, times(1)).deleteAll(eq(context), eq(TENANT_ID), any());
   }
 
   @Test
@@ -60,15 +54,11 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
 
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
-    Request exampleRequest = new Request();
-
-    fail(null, 4).when(mockStorage)
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+    fail(null, 2).when(mockStorage).deleteAll(eq(context), eq(TENANT_ID), any());
 
     AsyncResult<Response> response = getOnCompletion(f ->
-      requestsAPI.postRequestStorageRequests(
+      requestsAPI.deleteRequestStorageRequests(
         SampleParameters.sampleLanguage(),
-        exampleRequest,
         SampleParameters.sampleHeaders(TENANT_ID),
         complete(f),
         context));
@@ -76,12 +66,11 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
     assertThat(response.result().getStatus(), is(500));
 
     verify(mockLogAssistant, times(1)).logError(any(),
-      eq("Unknown failure cause when attempting to create a request"));
+      eq("Unknown failure cause when attempting to delete all requests"));
 
     verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
 
-    verify(mockStorage, times(1))
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+    verify(mockStorage, times(1)).deleteAll(eq(context), eq(TENANT_ID), any());
   }
 
   @Test
@@ -93,15 +82,11 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    Request exampleRequest = new Request();
-
-    doThrow(expectedException).when(mockStorage)
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+    doThrow(expectedException).when(mockStorage).deleteAll(eq(context), eq(TENANT_ID), any());
 
     AsyncResult<Response> response = getOnCompletion(f ->
-      requestsAPI.postRequestStorageRequests(
+      requestsAPI.deleteRequestStorageRequests(
         SampleParameters.sampleLanguage(),
-        exampleRequest,
         SampleParameters.sampleHeaders(TENANT_ID),
         complete(f),
         context));
@@ -111,37 +96,30 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
     verify(mockLogAssistant, times(1)).logError(any(), eq(expectedException));
     verify(mockLogAssistant, never()).logError(any(), any(String.class));
 
-    verify(mockStorage, times(1))
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+    verify(mockStorage, times(1)).deleteAll(eq(context), eq(TENANT_ID), any());
   }
 
   @Test
-  public void shouldRespondCreatedWhenRequestCreated() throws Exception {
+  public void shouldRespondOkWhenAllRequestsDeleted() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
 
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
-    Request exampleRequest = new Request();
-
-    succeed("", 4).when(mockStorage)
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+    succeed("", 2).when(mockStorage).deleteAll(eq(context), eq(TENANT_ID), any());
 
     AsyncResult<Response> response = getOnCompletion(f ->
-      requestsAPI.postRequestStorageRequests(
+      requestsAPI.deleteRequestStorageRequests(
         SampleParameters.sampleLanguage(),
-        exampleRequest,
         SampleParameters.sampleHeaders(TENANT_ID),
         complete(f),
         context));
 
-    assertThat(String.format("Should succeed: %s", response.cause()),
-      response.result().getStatus(), is(201));
+    assertThat(response.result().getStatus(), is(204));
 
     verify(mockLogAssistant, never()).logError(any(), any(String.class));
     verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
 
-    verify(mockStorage, times(1))
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+    verify(mockStorage, times(1)).deleteAll(eq(context), eq(TENANT_ID), any());
   }
 }

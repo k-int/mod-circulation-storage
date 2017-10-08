@@ -1,4 +1,4 @@
-package org.folio.rest.unit;
+package org.folio.rest.unit.requests;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.ext.sql.UpdateResult;
