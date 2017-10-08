@@ -3,6 +3,7 @@ package org.folio.rest.impl.support.storage;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.ext.sql.UpdateResult;
 
 public interface Storage {
   void create(
@@ -30,4 +31,10 @@ public interface Storage {
     Context context,
     String tenantId,
     Handler<AsyncResult<Object[]>> handleResult) throws Exception;
+
+  void deleteById(
+    String id,
+    Context context,
+    String tenantId,
+    Handler<AsyncResult<UpdateResult>> handleResult) throws Exception;
 }
