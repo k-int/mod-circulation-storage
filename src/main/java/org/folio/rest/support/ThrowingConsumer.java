@@ -1,4 +1,4 @@
-package org.folio.rest.unit.support;
+package org.folio.rest.support;
 
 @FunctionalInterface
 public interface ThrowingConsumer<T, E extends Exception> {

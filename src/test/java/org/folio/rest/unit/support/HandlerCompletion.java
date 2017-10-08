@@ -1,6 +1,7 @@
 package org.folio.rest.unit.support;
 
 import io.vertx.core.Handler;
+import org.folio.rest.support.ThrowingConsumer;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
