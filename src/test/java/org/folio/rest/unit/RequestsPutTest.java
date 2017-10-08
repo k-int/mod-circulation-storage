@@ -17,6 +17,7 @@ import java.util.UUID;
 
 import static org.folio.rest.unit.support.HandlerCompletion.complete;
 import static org.folio.rest.unit.support.HandlerCompletion.getOnCompletion;
+import static org.folio.rest.unit.support.StubberAssistant.fail;
 import static org.folio.rest.unit.support.StubberAssistant.succeed;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -107,6 +108,123 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
 
     verify(mockStorage, never())
       .create(eq(expectedId), any(), eq(context), eq(TENANT_ID), any());
+  }
+
+  @Test
+  public void shouldRespondWithErrorWhenKnownFailureOccursDuringGetById() throws Exception {
+    LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
+    Storage mockStorage = mock(Storage.class);
+
+    RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
+
+    String expectedId = UUID.randomUUID().toString();
+    Request exampleRequest = new Request().withId(expectedId);
+
+    Exception expectedException = new Exception("Sample Failure");
+
+    fail(expectedException, 3).when(mockStorage)
+      .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
+
+    AsyncResult<Response> response = getOnCompletion(f ->
+      requestsAPI.putRequestStorageRequestsByRequestId(
+        expectedId,
+        SampleParameters.sampleLanguage(),
+        exampleRequest,
+        SampleParameters.sampleHeaders(TENANT_ID),
+        complete(f),
+        context));
+
+    assertThat(response.result().getStatus(), is(500));
+
+    verify(mockLogAssistant, times(1)).logError(any(), eq(expectedException));
+    verify(mockLogAssistant, never()).logError(any(), any(String.class));
+
+    verify(mockStorage, times(1))
+      .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
+
+    verify(mockStorage, never())
+      .create(eq(expectedId), any(), eq(context), eq(TENANT_ID), any());
+
+    verify(mockStorage, never())
+      .update(eq(expectedId), any(), eq(context), eq(TENANT_ID), any());
+  }
+
+  @Test
+  public void shouldRespondWithErrorWhenUnknownFailureOccursDuringGetById() throws Exception {
+    LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
+    Storage mockStorage = mock(Storage.class);
+
+    RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
+
+    String expectedId = UUID.randomUUID().toString();
+    Request exampleRequest = new Request().withId(expectedId);
+
+    fail(null, 3).when(mockStorage)
+      .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
+
+    AsyncResult<Response> response = getOnCompletion(f ->
+      requestsAPI.putRequestStorageRequestsByRequestId(
+        expectedId,
+        SampleParameters.sampleLanguage(),
+        exampleRequest,
+        SampleParameters.sampleHeaders(TENANT_ID),
+        complete(f),
+        context));
+
+    assertThat(response.result().getStatus(), is(500));
+
+    verify(mockLogAssistant, times(1)).logError(any(),
+      eq("Unknown failure cause when attempting to create or update a request by ID"));
+
+    verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
+
+    verify(mockStorage, times(1))
+      .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
+
+    verify(mockStorage, never())
+      .create(eq(expectedId), any(), eq(context), eq(TENANT_ID), any());
+
+    verify(mockStorage, never())
+      .update(eq(expectedId), any(), eq(context), eq(TENANT_ID), any());
+  }
+
+  @Test
+  public void shouldRespondWithErrorWhenUnexpectedExceptionOccursDuringGetById() throws Exception {
+    LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
+    Storage mockStorage = mock(Storage.class);
+
+    RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
+
+    String expectedId = UUID.randomUUID().toString();
+    Request exampleRequest = new Request().withId(expectedId);
+
+    Exception expectedException = new Exception("Sample Failure");
+
+    doThrow(expectedException).when(mockStorage)
+      .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
+
+    AsyncResult<Response> response = getOnCompletion(f ->
+      requestsAPI.putRequestStorageRequestsByRequestId(
+        expectedId,
+        SampleParameters.sampleLanguage(),
+        exampleRequest,
+        SampleParameters.sampleHeaders(TENANT_ID),
+        complete(f),
+        context));
+
+    assertThat(response.result().getStatus(), is(500));
+
+    verify(mockLogAssistant, times(1)).logError(any(), eq(expectedException));
+    verify(mockLogAssistant, never()).logError(any(), any(String.class));
+
+    verify(mockStorage, times(1))
+      .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
+
+    verify(mockStorage, never())
+      .create(eq(expectedId), any(), eq(context), eq(TENANT_ID), any());
+
+    verify(mockStorage, never())
+      .update(eq(expectedId), any(), eq(context), eq(TENANT_ID), any());
   }
 
   private Object[] noRecordsFound() {
