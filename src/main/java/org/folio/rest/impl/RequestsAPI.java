@@ -56,7 +56,7 @@ public class RequestsAPI implements RequestStorageResource {
     Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
       asyncResultHandler,
       "Unknown failure cause when attempting to delete all requests",
-      (message) -> DeleteRequestStorageRequestsResponse
+      message -> DeleteRequestStorageRequestsResponse
         .withPlainInternalServerError(message));
 
     vertxContext.runOnContext(v -> {
@@ -87,7 +87,7 @@ public class RequestsAPI implements RequestStorageResource {
     Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
       asyncResultHandler,
       "Unknown failure cause when attempting to get all requests",
-      (message) -> GetRequestStorageRequestsResponse
+      message -> GetRequestStorageRequestsResponse
         .withPlainInternalServerError(message));
 
     try {
@@ -132,7 +132,7 @@ public class RequestsAPI implements RequestStorageResource {
     Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
       asyncResultHandler,
       "Unknown failure cause when attempting to create a request",
-      (message) -> PostRequestStorageRequestsResponse
+      message -> PostRequestStorageRequestsResponse
         .withPlainInternalServerError(message));
 
     try {
@@ -179,7 +179,7 @@ public class RequestsAPI implements RequestStorageResource {
     Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
       asyncResultHandler,
       "Unknown failure cause when attempting to get a request by ID",
-      (message) -> GetRequestStorageRequestsByRequestIdResponse
+      message -> GetRequestStorageRequestsByRequestIdResponse
         .withPlainInternalServerError(message));
 
     try {
@@ -226,18 +226,18 @@ public class RequestsAPI implements RequestStorageResource {
     Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
       asyncResultHandler,
       "Unknown failure cause when attempting to delete a request by ID",
-      (message) -> PostRequestStorageRequestsResponse
+      message -> PostRequestStorageRequestsResponse
         .withPlainInternalServerError(message));
 
     try {
       vertxContext.runOnContext(v -> {
         try {
           storage.deleteById(requestId, vertxContext, tenantId,
-            ResultHandler.filter(r -> {
-                respond(asyncResultHandler,
-                    DeleteRequestStorageRequestsByRequestIdResponse
-                      .withNoContent());
-              }, onExceptionalFailure));
+            ResultHandler.filter(
+              r -> respond(asyncResultHandler,
+                DeleteRequestStorageRequestsByRequestIdResponse
+                  .withNoContent()),
+              onExceptionalFailure));
         } catch (Exception e) {
           onExceptionalFailure.accept(e);
         }
@@ -260,7 +260,7 @@ public class RequestsAPI implements RequestStorageResource {
     Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
       asyncResultHandler,
       "Unknown failure cause when attempting to create or update a request by ID",
-      (message) -> PostRequestStorageRequestsResponse
+      message -> PostRequestStorageRequestsResponse
         .withPlainInternalServerError(message));
 
     try {
@@ -274,11 +274,11 @@ public class RequestsAPI implements RequestStorageResource {
                 if (getResult.isFound()) {
                   try {
                     storage.update(requestId, entity, vertxContext, tenantId,
-                      ResultHandler.filter(r -> {
-                        respond(asyncResultHandler,
+                      ResultHandler.filter(
+                        r -> respond(asyncResultHandler,
                           PutRequestStorageRequestsByRequestIdResponse
-                            .withNoContent());
-                      }, onExceptionalFailure));
+                          .withNoContent()),
+                        onExceptionalFailure));
                   } catch (Exception e) {
                     onExceptionalFailure.accept(e);
                   }
@@ -286,11 +286,10 @@ public class RequestsAPI implements RequestStorageResource {
                 else {
                   try {
                     storage.create(entity.getId(), entity, vertxContext, tenantId,
-                      ResultHandler.filter(r -> {
-                        respond(asyncResultHandler,
-                          PutRequestStorageRequestsByRequestIdResponse
-                            .withNoContent());
-                      }, onExceptionalFailure));
+                      ResultHandler.filter(
+                        r -> respond(asyncResultHandler,
+                          PutRequestStorageRequestsByRequestIdResponse.withNoContent()),
+                        onExceptionalFailure));
                   } catch (Exception e) {
                     onExceptionalFailure.accept(e);
                   }
@@ -320,7 +319,7 @@ public class RequestsAPI implements RequestStorageResource {
     String unknownFailureMessage,
     Function<String, Response> failureResponseCreator) {
 
-    return (e) -> {
+    return e -> {
       if(e != null) {
         loggingAssistant.logError(log, e);
         respond(responseHandler, failureResponseCreator.apply(e.getMessage()));
