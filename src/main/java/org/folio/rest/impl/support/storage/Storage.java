@@ -12,6 +12,12 @@ public interface Storage {
     String tenantId,
     Handler<AsyncResult<String>> handleResult) throws Exception;
 
+  void getById(
+    String id,
+    Context context,
+    String tenantId,
+    Handler<AsyncResult<Object[]>> handleResult) throws Exception;
+
   void deleteAll(
     Context context,
     String tenantId,

@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 public class RequestsPostTest extends AbstractVertxUnitTest {
 
   @Test
-  public void shouldLogFailureDuringPost() throws Exception {
+  public void shouldRespondWithErrorWhenKnownFailureOccurs() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
 
@@ -54,7 +54,7 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
   }
 
   @Test
-  public void shouldLogUnknownFailureDuringPost() throws Exception {
+  public void shouldRespondWithErrorWhenUnknownFailureOccurs() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
 
@@ -85,7 +85,7 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
   }
 
   @Test
-  public void shouldLogUnexpectedExceptionDuringPost() throws Exception {
+  public void shouldRespondWithErrorWhenUnexpectedExceptionOccurs() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
 
@@ -116,7 +116,7 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
   }
 
   @Test
-  public void shouldNotLogDuringSuccessfulPost() throws Exception {
+  public void shouldRespondCreatedWhenRequestCreated() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
 

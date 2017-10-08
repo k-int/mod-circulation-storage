@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 public class RequestsDeleteAllTest extends AbstractVertxUnitTest {
 
   @Test
-  public void shouldLogFailureDuringDeleteAll() throws Exception {
+  public void shouldRespondWithErrorWhenKnownFailureOccurs() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
 
@@ -48,7 +48,7 @@ public class RequestsDeleteAllTest extends AbstractVertxUnitTest {
   }
 
   @Test
-  public void shouldLogUnknownFailureDuringDeleteAll() throws Exception {
+  public void shouldRespondWithErrorWhenUnknownFailureOccurs() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
 
@@ -74,7 +74,7 @@ public class RequestsDeleteAllTest extends AbstractVertxUnitTest {
   }
 
   @Test
-  public void shouldLogUnexpectedExceptionDuringDeleteAll() throws Exception {
+  public void shouldRespondWithErrorWhenUnexpectedExceptionOccurs() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
 
@@ -100,7 +100,7 @@ public class RequestsDeleteAllTest extends AbstractVertxUnitTest {
   }
 
   @Test
-  public void shouldNotLogDuringSuccessfulDeleteAll() throws Exception {
+  public void shouldRespondOkWhenAllRequestsDeleted() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
 
