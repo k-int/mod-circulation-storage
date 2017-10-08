@@ -3,6 +3,7 @@ package org.folio.rest.impl.support.storage;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.ext.sql.UpdateResult;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
@@ -45,15 +46,8 @@ public class PostgreSQLStorage implements Storage {
     PostgresClient postgresClient = PostgresClient.getInstance(
       context.owner(), TenantTool.calculateTenantId(tenantId));
 
-    Criteria a = new Criteria();
-
-    a.addField("'id'");
-    a.setOperation("=");
-    a.setValue(id);
-
-    Criterion criterion = new Criterion(a);
-
-    postgresClient.get(tableName, entityClass, criterion, true, false, handleResult);
+    postgresClient.get(tableName, entityClass, equalityCriteria(id), true, false,
+      handleResult);
   }
 
   @Override
@@ -91,5 +85,28 @@ public class PostgreSQLStorage implements Storage {
 
     postgresClient.get(tableName, entityClass, fieldList, cql,
       true, false, handleResult);
+  }
+
+  @Override
+  public void deleteById(
+    String id,
+    Context context,
+    String tenantId,
+    Handler<AsyncResult<UpdateResult>> handleResult) throws Exception {
+
+    PostgresClient postgresClient = PostgresClient.getInstance(
+      context.owner(), TenantTool.calculateTenantId(tenantId));
+
+    postgresClient.delete(tableName, equalityCriteria(id), handleResult);
+  }
+
+  private Criterion equalityCriteria(String id) {
+    Criteria a = new Criteria();
+
+    a.addField("'id'");
+    a.setOperation("=");
+    a.setValue(id);
+
+    return new Criterion(a);
   }
 }

@@ -227,48 +227,27 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
+      asyncResultHandler,
+      "Unknown failure cause when attempting to delete a request by ID",
+      (message) -> PostRequestStorageRequestsResponse
+        .withPlainInternalServerError(message));
+
     try {
-      PostgresClient postgresClient =
-        PostgresClient.getInstance(
-          vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
-
-      Criteria a = new Criteria();
-
-      a.addField("'id'");
-      a.setOperation("=");
-      a.setValue(requestId);
-
-      Criterion criterion = new Criterion(a);
-
       vertxContext.runOnContext(v -> {
         try {
-          postgresClient.delete(REQUEST_TABLE, criterion,
-            reply -> {
-              if(reply.succeeded()) {
-                asyncResultHandler.handle(
-                  Future.succeededFuture(
+          storage.deleteById(requestId, vertxContext, tenantId,
+            ResultHandler.filter(r -> {
+                respond(asyncResultHandler,
                     DeleteRequestStorageRequestsByRequestIdResponse
-                      .withNoContent()));
-              }
-              else {
-                loggingAssistant.logError(log, reply.cause());
-                asyncResultHandler.handle(Future.succeededFuture(
-                  DeleteRequestStorageRequestsByRequestIdResponse
-                    .withPlainInternalServerError(reply.cause().getMessage())));
-              }
-            });
+                      .withNoContent());
+              }, onExceptionalFailure));
         } catch (Exception e) {
-          loggingAssistant.logError(log, e);
-          asyncResultHandler.handle(Future.succeededFuture(
-            DeleteRequestStorageRequestsByRequestIdResponse
-              .withPlainInternalServerError(e.getMessage())));
+          onExceptionalFailure.accept(e);
         }
       });
     } catch (Exception e) {
-      loggingAssistant.logError(log, e);
-      asyncResultHandler.handle(Future.succeededFuture(
-        DeleteRequestStorageRequestsByRequestIdResponse
-          .withPlainInternalServerError(e.getMessage())));
+      onExceptionalFailure.accept(e);
     }
   }
 
