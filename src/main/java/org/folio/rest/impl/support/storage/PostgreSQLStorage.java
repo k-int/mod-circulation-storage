@@ -3,6 +3,8 @@ package org.folio.rest.impl.support.storage;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import org.folio.rest.persist.Criteria.Criteria;
+import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PostgresClient;
@@ -31,6 +33,27 @@ public class PostgreSQLStorage implements Storage {
       context.owner(), TenantTool.calculateTenantId(tenantId));
 
     postgresClient.save(tableName, id, entity, handleResult);
+  }
+
+  @Override
+  public void getById(
+    String id,
+    Context context,
+    String tenantId,
+    Handler<AsyncResult<Object[]>> handleResult) throws Exception {
+
+    PostgresClient postgresClient = PostgresClient.getInstance(
+      context.owner(), TenantTool.calculateTenantId(tenantId));
+
+    Criteria a = new Criteria();
+
+    a.addField("'id'");
+    a.setOperation("=");
+    a.setValue(id);
+
+    Criterion criterion = new Criterion(a);
+
+    postgresClient.get(tableName, entityClass, criterion, true, false, handleResult);
   }
 
   @Override

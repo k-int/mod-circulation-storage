@@ -10,6 +10,7 @@ import org.folio.rest.impl.support.LoggingAssistant;
 import org.folio.rest.impl.support.ResultHandler;
 import org.folio.rest.impl.support.SimpleLoggingAssistant;
 import org.folio.rest.impl.support.storage.PostgreSQLStorage;
+import org.folio.rest.impl.support.storage.SingleResult;
 import org.folio.rest.impl.support.storage.Storage;
 import org.folio.rest.jaxrs.model.Request;
 import org.folio.rest.jaxrs.model.Requests;
@@ -179,67 +180,40 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
+      asyncResultHandler,
+      "Unknown failure cause when attempting to get a request by ID",
+      (message) -> GetRequestStorageRequestsByRequestIdResponse
+        .withPlainInternalServerError(message));
+
     try {
-      PostgresClient postgresClient = PostgresClient.getInstance(
-        vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
-
-      Criteria a = new Criteria();
-
-      a.addField("'id'");
-      a.setOperation("=");
-      a.setValue(requestId);
-
-      Criterion criterion = new Criterion(a);
-
       vertxContext.runOnContext(v -> {
-        try {
-          postgresClient.get(REQUEST_TABLE, Request.class, criterion, true, false,
-            reply -> {
-              try {
-                if (reply.succeeded()) {
-                  List<Request> requests = (List<Request>) reply.result()[0];
+            try {
+              storage.getById(requestId, vertxContext, tenantId,
+                ResultHandler.filter(r -> {
+                  try {
+                      SingleResult<Request> result = SingleResult.from(r);
 
-                  if (requests.size() == 1) {
-                    Request request = requests.get(0);
-
-                    asyncResultHandler.handle(
-                      io.vertx.core.Future.succeededFuture(
-                        GetRequestStorageRequestsByRequestIdResponse.
-                          withJsonOK(request)));
+                      if (result.isFound()) {
+                        respond(asyncResultHandler,
+                          GetRequestStorageRequestsByRequestIdResponse.
+                          withJsonOK(result.getResult()));
+                      }
+                      else {
+                        respond(asyncResultHandler,
+                            GetRequestStorageRequestsByRequestIdResponse.
+                              withPlainNotFound("Not Found"));
+                      }
+                  } catch (Exception e) {
+                    onExceptionalFailure.accept(e);
                   }
-                  else {
-                    asyncResultHandler.handle(
-                      Future.succeededFuture(
-                        GetRequestStorageRequestsByRequestIdResponse.
-                          withPlainNotFound("Not Found")));
-                  }
-                } else {
-                  loggingAssistant.logError(log, reply.cause());
-                  asyncResultHandler.handle(
-                    Future.succeededFuture(
-                        GetRequestStorageRequestsByRequestIdResponse.
-                        withPlainInternalServerError(reply.cause().getMessage())));
-
-                }
-              } catch (Exception e) {
-                loggingAssistant.logError(log, e);
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                  GetRequestStorageRequestsByRequestIdResponse.
-                    withPlainInternalServerError(e.getMessage())));
-              }
-            });
+              }, onExceptionalFailure));
         } catch (Exception e) {
-          loggingAssistant.logError(log, e);
-          asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-            GetRequestStorageRequestsByRequestIdResponse.
-              withPlainInternalServerError(e.getMessage())));
+          onExceptionalFailure.accept(e);
         }
       });
     } catch (Exception e) {
-      loggingAssistant.logError(log, e);
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-          GetRequestStorageRequestsByRequestIdResponse.
-          withPlainInternalServerError(e.getMessage())));
+      onExceptionalFailure.accept(e);
     }
   }
 
