@@ -274,20 +274,11 @@ public class RequestsAPI implements RequestStorageResource {
                 if (getResult.isFound()) {
                   try {
                     storage.update(requestId, entity, vertxContext, tenantId,
-                      updateResult -> {
-                        try {
-                          if(updateResult.succeeded()) {
-                            respond(asyncResultHandler,
-                                PutRequestStorageRequestsByRequestIdResponse
-                                  .withNoContent());
-                          }
-                          else {
-                            onExceptionalFailure.accept(updateResult.cause());
-                          }
-                        } catch (Exception e) {
-                          onExceptionalFailure.accept(e);
-                        }
-                      });
+                      ResultHandler.filter(r -> {
+                        respond(asyncResultHandler,
+                          PutRequestStorageRequestsByRequestIdResponse
+                            .withNoContent());
+                      }, onExceptionalFailure));
                   } catch (Exception e) {
                     onExceptionalFailure.accept(e);
                   }
@@ -295,20 +286,11 @@ public class RequestsAPI implements RequestStorageResource {
                 else {
                   try {
                     storage.create(entity.getId(), entity, vertxContext, tenantId,
-                      saveReply -> {
-                        try {
-                          if(saveReply.succeeded()) {
-                            respond(asyncResultHandler,
-                                PutRequestStorageRequestsByRequestIdResponse
-                                  .withNoContent());
-                          }
-                          else {
-                            onExceptionalFailure.accept(saveReply.cause());
-                          }
-                        } catch (Exception e) {
-                          onExceptionalFailure.accept(e);
-                        }
-                      });
+                      ResultHandler.filter(r -> {
+                        respond(asyncResultHandler,
+                          PutRequestStorageRequestsByRequestIdResponse
+                            .withNoContent());
+                      }, onExceptionalFailure));
                   } catch (Exception e) {
                     onExceptionalFailure.accept(e);
                   }
@@ -322,10 +304,7 @@ public class RequestsAPI implements RequestStorageResource {
         }
       });
     } catch (Exception e) {
-      loggingAssistant.logError(log, e);
-      respond(asyncResultHandler,
-        PutRequestStorageRequestsByRequestIdResponse
-          .withPlainInternalServerError(e.getMessage()));
+      onExceptionalFailure.accept(e);
     }
   }
 
