@@ -10,10 +10,10 @@ import org.folio.rest.unit.support.SampleParameters;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.UUID;
 
+import static org.folio.rest.unit.support.FakeMultipleRecordResult.noRecordsFound;
+import static org.folio.rest.unit.support.FakeMultipleRecordResult.singleRecordFound;
 import static org.folio.rest.unit.support.HandlerCompletion.complete;
 import static org.folio.rest.unit.support.HandlerCompletion.getOnCompletion;
 import static org.folio.rest.unit.support.StubberAssistant.fail;
@@ -128,9 +128,7 @@ public class RequestsGetByIdTest extends AbstractVertxUnitTest {
 
     String expectedId = UUID.randomUUID().toString();
 
-    Object[] result = new Object[2];
-    result[0] = new ArrayList<>(Arrays.asList(new Request()));
-    result[1] = 1;
+    Object[] result = singleRecordFound(new Request());
 
     succeed(result, 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
@@ -163,11 +161,7 @@ public class RequestsGetByIdTest extends AbstractVertxUnitTest {
 
     String expectedId = UUID.randomUUID().toString();
 
-    Object[] result = new Object[2];
-    result[0] = new ArrayList<>();
-    result[1] = 0;
-
-    succeed(result, 3).when(mockStorage)
+    succeed(noRecordsFound(), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
 
     AsyncResult<Response> response = getOnCompletion(f -> {

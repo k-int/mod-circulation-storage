@@ -7,12 +7,11 @@ import org.folio.rest.impl.support.LoggingAssistant;
 import org.folio.rest.impl.support.storage.Storage;
 import org.folio.rest.jaxrs.model.Request;
 import org.folio.rest.unit.support.AbstractVertxUnitTest;
+import org.folio.rest.unit.support.FakeMultipleRecordResult;
 import org.folio.rest.unit.support.SampleParameters;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.UUID;
 
 import static org.folio.rest.unit.support.HandlerCompletion.complete;
@@ -38,7 +37,7 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     String expectedId = UUID.randomUUID().toString();
     Request exampleRequest = new Request().withId(expectedId);
 
-    succeed(noRecordsFound(), 3).when(mockStorage)
+    succeed(FakeMultipleRecordResult.noRecordsFound(), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
 
     succeed("", 4).when(mockStorage)
@@ -79,7 +78,7 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     String expectedId = UUID.randomUUID().toString();
     Request exampleRequest = new Request().withId(expectedId);
 
-    succeed(singleRecordFound(exampleRequest), 3).when(mockStorage)
+    succeed(FakeMultipleRecordResult.singleRecordFound(exampleRequest), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
 
     succeed(new UpdateResult(), 4).when(mockStorage)
@@ -239,7 +238,7 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    succeed(noRecordsFound(), 3).when(mockStorage)
+    succeed(FakeMultipleRecordResult.noRecordsFound(), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
 
     fail(expectedException, 4).when(mockStorage)
@@ -279,7 +278,7 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     String expectedId = UUID.randomUUID().toString();
     Request exampleRequest = new Request().withId(expectedId);
 
-    succeed(noRecordsFound(), 3).when(mockStorage)
+    succeed(FakeMultipleRecordResult.noRecordsFound(), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
 
     fail(null, 4).when(mockStorage)
@@ -323,7 +322,7 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    succeed(noRecordsFound(), 3).when(mockStorage)
+    succeed(FakeMultipleRecordResult.noRecordsFound(), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
 
     doThrow(expectedException).when(mockStorage)
@@ -365,7 +364,7 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    succeed(singleRecordFound(exampleRequest), 3).when(mockStorage)
+    succeed(FakeMultipleRecordResult.singleRecordFound(exampleRequest), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
 
     fail(expectedException, 4).when(mockStorage)
@@ -405,7 +404,7 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     String expectedId = UUID.randomUUID().toString();
     Request exampleRequest = new Request().withId(expectedId);
 
-    succeed(singleRecordFound(exampleRequest), 3).when(mockStorage)
+    succeed(FakeMultipleRecordResult.singleRecordFound(exampleRequest), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
 
     fail(null, 4).when(mockStorage)
@@ -449,7 +448,7 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    succeed(singleRecordFound(exampleRequest), 3).when(mockStorage)
+    succeed(FakeMultipleRecordResult.singleRecordFound(exampleRequest), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
 
     doThrow(expectedException).when(mockStorage)
@@ -477,19 +476,5 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
 
     verify(mockStorage, never())
       .create(eq(expectedId), any(), eq(context), eq(TENANT_ID), any());
-  }
-
-  private Object[] noRecordsFound() {
-    Object[] result = new Object[2];
-    result[0] = new ArrayList<>(Arrays.asList());
-    result[1] = 0;
-    return result;
-  }
-
-  private <T> Object[] singleRecordFound(T record) {
-    Object[] result = new Object[2];
-    result[0] = new ArrayList<>(Arrays.asList(record));
-    result[1] = 1;
-    return result;
   }
 }
