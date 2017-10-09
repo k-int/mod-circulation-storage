@@ -4,14 +4,13 @@ import io.vertx.core.AsyncResult;
 import org.folio.rest.impl.RequestsAPI;
 import org.folio.rest.impl.support.LoggingAssistant;
 import org.folio.rest.impl.support.storage.Storage;
-import org.folio.rest.jaxrs.model.Request;
 import org.folio.rest.unit.support.AbstractVertxUnitTest;
 import org.folio.rest.unit.support.SampleParameters;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 
+import static org.folio.rest.unit.support.FakeMultipleRecordResult.noRecordsFound;
 import static org.folio.rest.unit.support.HandlerCompletion.complete;
 import static org.folio.rest.unit.support.HandlerCompletion.getOnCompletion;
 import static org.folio.rest.unit.support.StubberAssistant.fail;
@@ -117,11 +116,7 @@ public class RequestsGetAllTest extends AbstractVertxUnitTest {
 
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
-    Object[] result = new Object[2];
-    result[0] = new ArrayList<Request>();
-    result[1] = 0;
-
-    succeed(result, 5).when(mockStorage)
+    succeed(noRecordsFound(), 5).when(mockStorage)
       .getAll(eq(0), eq(10), eq(""), eq(context), eq(TENANT_ID), any());
 
     AsyncResult<Response> response = getOnCompletion(f ->
