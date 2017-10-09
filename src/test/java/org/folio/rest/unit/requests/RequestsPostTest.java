@@ -5,6 +5,7 @@ import org.folio.rest.impl.RequestsAPI;
 import org.folio.rest.impl.support.LoggingAssistant;
 import org.folio.rest.impl.support.storage.Storage;
 import org.folio.rest.jaxrs.model.Request;
+import org.folio.rest.support.builders.RequestRequestBuilder;
 import org.folio.rest.unit.support.AbstractVertxUnitTest;
 import org.folio.rest.unit.support.SampleParameters;
 import org.junit.Test;
@@ -13,6 +14,7 @@ import javax.ws.rs.core.Response;
 
 import static org.folio.rest.unit.support.HandlerCompletion.complete;
 import static org.folio.rest.unit.support.HandlerCompletion.getOnCompletion;
+import static org.folio.rest.unit.support.JsonSerialization.fromJson;
 import static org.folio.rest.unit.support.StubberAssistant.fail;
 import static org.folio.rest.unit.support.StubberAssistant.succeed;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -31,7 +33,8 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    Request exampleRequest = new Request();
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().create());
 
     fail(expectedException, 4).when(mockStorage)
       .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
@@ -60,7 +63,8 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
 
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
-    Request exampleRequest = new Request();
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().create());
 
     fail(null, 4).when(mockStorage)
       .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
@@ -93,7 +97,8 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
 
     Exception expectedException = new Exception("Sample Failure");
 
-    Request exampleRequest = new Request();
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().create());
 
     doThrow(expectedException).when(mockStorage)
       .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
@@ -122,7 +127,8 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
 
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
-    Request exampleRequest = new Request();
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().create());
 
     succeed("", 4).when(mockStorage)
       .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());

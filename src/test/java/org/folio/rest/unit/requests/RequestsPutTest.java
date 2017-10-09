@@ -6,6 +6,7 @@ import org.folio.rest.impl.RequestsAPI;
 import org.folio.rest.impl.support.LoggingAssistant;
 import org.folio.rest.impl.support.storage.Storage;
 import org.folio.rest.jaxrs.model.Request;
+import org.folio.rest.support.builders.RequestRequestBuilder;
 import org.folio.rest.unit.support.AbstractVertxUnitTest;
 import org.folio.rest.unit.support.FakeMultipleRecordResult;
 import org.folio.rest.unit.support.SampleParameters;
@@ -16,6 +17,7 @@ import java.util.UUID;
 
 import static org.folio.rest.unit.support.HandlerCompletion.complete;
 import static org.folio.rest.unit.support.HandlerCompletion.getOnCompletion;
+import static org.folio.rest.unit.support.JsonSerialization.fromJson;
 import static org.folio.rest.unit.support.StubberAssistant.fail;
 import static org.folio.rest.unit.support.StubberAssistant.succeed;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,7 +37,9 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
     String expectedId = UUID.randomUUID().toString();
-    Request exampleRequest = new Request().withId(expectedId);
+
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().withId(expectedId).create());
 
     succeed(FakeMultipleRecordResult.noRecordsFound(), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
@@ -76,7 +80,9 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
     String expectedId = UUID.randomUUID().toString();
-    Request exampleRequest = new Request().withId(expectedId);
+
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().withId(expectedId).create());
 
     succeed(FakeMultipleRecordResult.singleRecordFound(exampleRequest), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
@@ -117,7 +123,9 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
     String expectedId = UUID.randomUUID().toString();
-    Request exampleRequest = new Request().withId(expectedId);
+
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().withId(expectedId).create());
 
     Exception expectedException = new Exception("Sample Failure");
 
@@ -156,7 +164,9 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
     String expectedId = UUID.randomUUID().toString();
-    Request exampleRequest = new Request().withId(expectedId);
+
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().withId(expectedId).create());
 
     fail(null, 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
@@ -195,7 +205,9 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
     String expectedId = UUID.randomUUID().toString();
-    Request exampleRequest = new Request().withId(expectedId);
+
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().withId(expectedId).create());
 
     Exception expectedException = new Exception("Sample Failure");
 
@@ -234,7 +246,9 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
     String expectedId = UUID.randomUUID().toString();
-    Request exampleRequest = new Request().withId(expectedId);
+
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().withId(expectedId).create());
 
     Exception expectedException = new Exception("Sample Failure");
 
@@ -276,7 +290,9 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
     String expectedId = UUID.randomUUID().toString();
-    Request exampleRequest = new Request().withId(expectedId);
+
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().withId(expectedId).create());
 
     succeed(FakeMultipleRecordResult.noRecordsFound(), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
@@ -318,7 +334,9 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
     String expectedId = UUID.randomUUID().toString();
-    Request exampleRequest = new Request().withId(expectedId);
+
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().withId(expectedId).create());
 
     Exception expectedException = new Exception("Sample Failure");
 
@@ -360,7 +378,9 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
     String expectedId = UUID.randomUUID().toString();
-    Request exampleRequest = new Request().withId(expectedId);
+
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().withId(expectedId).create());
 
     Exception expectedException = new Exception("Sample Failure");
 
@@ -402,7 +422,9 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
     String expectedId = UUID.randomUUID().toString();
-    Request exampleRequest = new Request().withId(expectedId);
+
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().withId(expectedId).create());
 
     succeed(FakeMultipleRecordResult.singleRecordFound(exampleRequest), 3).when(mockStorage)
       .getById(eq(expectedId), eq(context), eq(TENANT_ID), any());
@@ -444,7 +466,9 @@ public class RequestsPutTest extends AbstractVertxUnitTest {
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
     String expectedId = UUID.randomUUID().toString();
-    Request exampleRequest = new Request().withId(expectedId);
+
+    Request exampleRequest = fromJson(Request.class,
+      new RequestRequestBuilder().withId(expectedId).create());
 
     Exception expectedException = new Exception("Sample Failure");
 

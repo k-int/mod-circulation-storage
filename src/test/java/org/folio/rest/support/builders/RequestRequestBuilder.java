@@ -143,6 +143,21 @@ public class RequestRequestBuilder {
       this.requesterSummary);
   }
 
+  public RequestRequestBuilder withId(String newId) {
+    return new RequestRequestBuilder(
+      UUID.fromString(newId),
+      this.requestType,
+      this.requestDate,
+      this.itemId,
+      this.requesterId,
+      this.fulfilmentPreference,
+      this.deliveryAddressTypeId,
+      this.requestExpirationDate,
+      this.holdShelfExpirationDate,
+      this.itemSummary,
+      this.requesterSummary);
+  }
+
   public RequestRequestBuilder withNoId() {
     return new RequestRequestBuilder(
       null,
