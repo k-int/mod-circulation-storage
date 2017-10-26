@@ -33,19 +33,8 @@ public class ResultHandler {
   public static <T> Handler<AsyncResult<T>> complete(
     CompletableFuture<T> future) {
 
-    return result -> {
-      try {
-        if (result.succeeded()) {
-          future.complete(result.result());
-          return;
-        } else {
-          future.completeExceptionally(result.cause());
-          return;
-        }
-      } catch (Exception e) {
-        future.completeExceptionally(e);
-        return;
-      }
-    };
+    return filter(
+      future::complete,
+      future::completeExceptionally);
   }
 }
