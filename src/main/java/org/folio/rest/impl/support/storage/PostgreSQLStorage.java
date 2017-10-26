@@ -113,6 +113,25 @@ public class PostgreSQLStorage implements Storage {
   }
 
   @Override
+  public CompletableFuture<String> deleteAll(Context context, String tenantId) {
+    CompletableFuture<String> future = new CompletableFuture<>();
+
+    try {
+      PostgresClient postgresClient = PostgresClient.getInstance(
+        context.owner(), TenantTool.calculateTenantId(tenantId));
+
+      postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.%s",
+        tenantId, "mod_circulation_storage", tableName),
+        ResultHandler.complete(future));
+    }
+    catch(Exception e) {
+      future.completeExceptionally(e);
+    }
+
+    return future;
+  }
+
+  @Override
   public void getAll(
     int offset,
     int limit,

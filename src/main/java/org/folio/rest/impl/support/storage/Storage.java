@@ -37,6 +37,10 @@ public interface Storage {
     String tenantId,
     Handler<AsyncResult<String>> handleResult) throws Exception;
 
+  CompletableFuture<String> deleteAll(
+    Context context,
+    String tenantId);
+
   void getAll(
     int offset,
     int limit,

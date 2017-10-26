@@ -7,7 +7,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.folio.rest.impl.support.LoggingAssistant;
-import org.folio.rest.impl.support.ResultHandler;
 import org.folio.rest.impl.support.SimpleLoggingAssistant;
 import org.folio.rest.impl.support.storage.PostgreSQLStorage;
 import org.folio.rest.impl.support.storage.SingleResult;
@@ -60,11 +59,11 @@ public class RequestsAPI implements RequestStorageResource {
 
     vertxContext.runOnContext(v -> {
       try {
-        storage.deleteAll(vertxContext, tenantId,
-          ResultHandler.filter(
+        storage.deleteAll(vertxContext, tenantId)
+          .exceptionally(toNullResultFunction(onExceptionalFailure))
+          .thenAccept(doNothingWhenNull(
             r -> respond(asyncResultHandler,
-              DeleteRequestStorageRequestsResponse.withNoContent()),
-            onExceptionalFailure));
+              DeleteRequestStorageRequestsResponse.withNoContent())));
       }
       catch(Exception e) {
         onExceptionalFailure.accept(e);
