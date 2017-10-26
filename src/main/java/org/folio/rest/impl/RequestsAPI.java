@@ -293,7 +293,7 @@ public class RequestsAPI implements RequestStorageResource {
     Function<String, Response> failureResponseCreator) {
 
     return e -> {
-      logError(unknownFailureMessage, e);
+      logError(e, unknownFailureMessage);
       respondWithError(responseHandler, unknownFailureMessage, failureResponseCreator, e);
     };
   }
@@ -320,7 +320,7 @@ public class RequestsAPI implements RequestStorageResource {
     }
   }
 
-  private void logError(String unknownFailureMessage, Throwable e) {
+  private void logError(Throwable e, String unknownFailureMessage) {
     if(e != null) {
       loggingAssistant.logError(log, e);
     }
