@@ -478,6 +478,10 @@ public class RequestsApiTest {
 
     JsonResponse getAfterUpdateResponse = getById(id);
 
+    assertThat(String.format("Failed to get updated request: %s",
+      getAfterUpdateResponse.getBody()),
+      getAfterUpdateResponse.getStatusCode(), is(HttpURLConnection.HTTP_OK));
+
     JsonObject updatedRequest = getAfterUpdateResponse.getJson();
 
     assertThat("Request should have metadata property",

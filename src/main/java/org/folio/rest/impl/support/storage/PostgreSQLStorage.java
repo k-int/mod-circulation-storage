@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.ext.sql.UpdateResult;
+import org.folio.rest.impl.support.ResultHandler;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
@@ -12,6 +13,8 @@ import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.TenantTool;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
+
+import java.util.concurrent.CompletableFuture;
 
 public class PostgreSQLStorage implements Storage {
   private final String tableName;
@@ -48,6 +51,30 @@ public class PostgreSQLStorage implements Storage {
 
     postgresClient.get(tableName, entityClass, equalityCriteria(id), true, false,
       handleResult);
+  }
+
+  @Override
+  public CompletableFuture<Object[]> getById(
+    String id,
+    Context context,
+    String tenantId) throws Exception {
+
+    CompletableFuture<Object[]> future = new CompletableFuture<>();
+
+    try {
+      PostgresClient postgresClient = PostgresClient.getInstance(
+        context.owner(), TenantTool.calculateTenantId(tenantId));
+
+      postgresClient.get(tableName, entityClass, equalityCriteria(id), true, false,
+        ResultHandler.complete(future));
+
+      return future;
+    }
+    catch(Exception e) {
+      future.completeExceptionally(e);
+
+      return future;
+    }
   }
 
   @Override

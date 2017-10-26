@@ -5,6 +5,8 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.ext.sql.UpdateResult;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface Storage {
   void create(
     String id,
@@ -18,6 +20,11 @@ public interface Storage {
     Context context,
     String tenantId,
     Handler<AsyncResult<Object[]>> handleResult) throws Exception;
+
+  CompletableFuture<Object[]> getById(
+    String id,
+    Context context,
+    String tenantId) throws Exception;
 
   void deleteAll(
     Context context,

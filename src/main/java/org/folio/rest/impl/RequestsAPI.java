@@ -53,7 +53,7 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailureConsumer(
       asyncResultHandler,
       "Unknown failure cause when attempting to delete all requests",
       message -> DeleteRequestStorageRequestsResponse
@@ -85,7 +85,7 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailureConsumer(
       asyncResultHandler,
       "Unknown failure cause when attempting to get all requests",
       message -> GetRequestStorageRequestsResponse
@@ -126,7 +126,7 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailureConsumer(
       asyncResultHandler,
       "Unknown failure cause when attempting to create a request",
       message -> PostRequestStorageRequestsResponse
@@ -169,38 +169,42 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
-      asyncResultHandler,
-      "Unknown failure cause when attempting to get a request by ID",
-      message -> GetRequestStorageRequestsByRequestIdResponse
-        .withPlainInternalServerError(message));
+    Function<Throwable, Object[]> onExceptionalFailure =
+      onExceptionalFailureFunction(
+        asyncResultHandler,
+        "Unknown failure cause when attempting to get a request by ID",
+        message -> GetRequestStorageRequestsByRequestIdResponse
+          .withPlainInternalServerError(message));
 
     try {
       vertxContext.runOnContext(v -> {
             try {
-              storage.getById(requestId, vertxContext, tenantId,
-                ResultHandler.filter(
-                  r -> {
-                    SingleResult<Request> result = SingleResult.from(r);
+              storage.getById(requestId, vertxContext, tenantId)
+                .exceptionally(onExceptionalFailure)
+                .thenAccept(r -> {
+                  if(r == null) {
+                    return;
+                  }
 
-                    if (result.isFound()) {
-                      respond(asyncResultHandler,
-                        GetRequestStorageRequestsByRequestIdResponse.
+                  SingleResult<Request> result = SingleResult.from(r);
+
+                  if (result.isFound()) {
+                    respond(asyncResultHandler,
+                      GetRequestStorageRequestsByRequestIdResponse.
                         withJsonOK(result.getResult()));
-                    }
-                    else {
-                      respond(asyncResultHandler,
-                          GetRequestStorageRequestsByRequestIdResponse.
-                            withPlainNotFound("Not Found"));
-                    }
-                  },
-                onExceptionalFailure));
+                  }
+                  else {
+                    respond(asyncResultHandler,
+                      GetRequestStorageRequestsByRequestIdResponse.
+                        withPlainNotFound("Not Found"));
+                  }
+                });
         } catch (Exception e) {
-          onExceptionalFailure.accept(e);
+          onExceptionalFailure.apply(e);
         }
       });
     } catch (Exception e) {
-      onExceptionalFailure.accept(e);
+      onExceptionalFailure.apply(e);
     }
   }
 
@@ -214,7 +218,7 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailureConsumer(
       asyncResultHandler,
       "Unknown failure cause when attempting to delete a request by ID",
       message -> PostRequestStorageRequestsResponse
@@ -248,7 +252,7 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailureConsumer(
       asyncResultHandler,
       "Unknown failure cause when attempting to create or update a request by ID",
       message -> PostRequestStorageRequestsResponse
@@ -295,21 +299,44 @@ public class RequestsAPI implements RequestStorageResource {
     handler.handle(Future.succeededFuture(response));
   }
 
-  private Consumer<Throwable> onExceptionalFailure(
+  private Consumer<Throwable> onExceptionalFailureConsumer(
     Handler<AsyncResult<Response>> responseHandler,
     String unknownFailureMessage,
     Function<String, Response> failureResponseCreator) {
 
     return e -> {
-      if(e != null) {
-        loggingAssistant.logError(log, e);
-        respond(responseHandler, failureResponseCreator.apply(e.getMessage()));
-      }
-      else {
-        loggingAssistant.logError(log, unknownFailureMessage);
+      logError(unknownFailureMessage, e);
+      respondWithError(responseHandler, unknownFailureMessage, failureResponseCreator, e);
+    };
+  }
 
-        respond(responseHandler, failureResponseCreator.apply(unknownFailureMessage));
-      }
+  private void respondWithError(Handler<AsyncResult<Response>> responseHandler, String unknownFailureMessage, Function<String, Response> failureResponseCreator, Throwable e) {
+    if(e != null) {
+      respond(responseHandler, failureResponseCreator.apply(e.getMessage()));
+    }
+    else {
+      respond(responseHandler, failureResponseCreator.apply(unknownFailureMessage));
+    }
+  }
+
+  private void logError(String unknownFailureMessage, Throwable e) {
+    if(e != null) {
+      loggingAssistant.logError(log, e);
+    }
+    else {
+      loggingAssistant.logError(log, unknownFailureMessage);
+    }
+  }
+
+  private <T> Function<Throwable, T> onExceptionalFailureFunction(
+    Handler<AsyncResult<Response>> responseHandler,
+    String unknownFailureMessage,
+    Function<String, Response> failureResponseCreator) {
+
+    return e -> {
+      logError(unknownFailureMessage, e);
+      respondWithError(responseHandler, unknownFailureMessage, failureResponseCreator, e);
+      return null;
     };
   }
 }

@@ -10,7 +10,9 @@ import java.util.concurrent.TimeoutException;
 
 public class HandlerCompletion {
   public static <T> Handler<T> complete(CompletableFuture<T> future) {
-    return t -> future.complete(t);
+    return t -> {
+      future.complete(t);
+    };
   }
 
   public static <T, E extends Exception> T getOnCompletion(
