@@ -15,6 +15,12 @@ public interface Storage {
     String tenantId,
     Handler<AsyncResult<String>> handleResult) throws Exception;
 
+  CompletableFuture<String> create(
+    String id,
+    Object entity,
+    Context context,
+    String tenantId) throws Exception;
+
   void getById(
     String id,
     Context context,

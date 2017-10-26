@@ -8,15 +8,16 @@ import org.folio.rest.jaxrs.model.Request;
 import org.folio.rest.support.builders.RequestRequestBuilder;
 import org.folio.rest.unit.support.AbstractVertxUnitTest;
 import org.folio.rest.unit.support.SampleParameters;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
+import java.util.concurrent.CompletableFuture;
 
+import static org.folio.rest.unit.support.FutureAssistant.exceptionalFuture;
 import static org.folio.rest.unit.support.HandlerCompletion.complete;
 import static org.folio.rest.unit.support.HandlerCompletion.getOnCompletion;
 import static org.folio.rest.unit.support.JsonSerialization.fromJson;
-import static org.folio.rest.unit.support.StubberAssistant.fail;
-import static org.folio.rest.unit.support.StubberAssistant.succeed;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,8 +37,8 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
     Request exampleRequest = fromJson(Request.class,
       new RequestRequestBuilder().create());
 
-    fail(expectedException, 4).when(mockStorage)
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+    when(mockStorage.create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID)))
+      .thenReturn(exceptionalFuture(expectedException));
 
     AsyncResult<Response> response = getOnCompletion(f ->
       requestsAPI.postRequestStorageRequests(
@@ -53,10 +54,11 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
     verify(mockLogAssistant, never()).logError(any(), any(String.class));
 
     verify(mockStorage, times(1))
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID));
   }
 
   @Test
+  @Ignore("Cannot complete a CompletableFuture with null exception")
   public void shouldRespondWithErrorWhenUnknownFailureOccurs() throws Exception {
     LoggingAssistant mockLogAssistant = mock(LoggingAssistant.class);
     Storage mockStorage = mock(Storage.class);
@@ -66,8 +68,8 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
     Request exampleRequest = fromJson(Request.class,
       new RequestRequestBuilder().create());
 
-    fail(null, 4).when(mockStorage)
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+    when(mockStorage.create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID)))
+      .thenReturn(exceptionalFuture(null));
 
     AsyncResult<Response> response = getOnCompletion(f ->
       requestsAPI.postRequestStorageRequests(
@@ -85,7 +87,7 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
     verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
 
     verify(mockStorage, times(1))
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID));
   }
 
   @Test
@@ -100,8 +102,8 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
     Request exampleRequest = fromJson(Request.class,
       new RequestRequestBuilder().create());
 
-    doThrow(expectedException).when(mockStorage)
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+    when(mockStorage.create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID)))
+      .thenThrow(expectedException);
 
     AsyncResult<Response> response = getOnCompletion(f ->
       requestsAPI.postRequestStorageRequests(
@@ -117,7 +119,7 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
     verify(mockLogAssistant, never()).logError(any(), any(String.class));
 
     verify(mockStorage, times(1))
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID));
   }
 
   @Test
@@ -130,8 +132,8 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
     Request exampleRequest = fromJson(Request.class,
       new RequestRequestBuilder().create());
 
-    succeed("", 4).when(mockStorage)
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+    when(mockStorage.create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID)))
+      .thenReturn(CompletableFuture.completedFuture(""));
 
     AsyncResult<Response> response = getOnCompletion(f ->
       requestsAPI.postRequestStorageRequests(
@@ -148,6 +150,6 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
     verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
 
     verify(mockStorage, times(1))
-      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID), any());
+      .create(anyString(), eq(exampleRequest), eq(context), eq(TENANT_ID));
   }
 }

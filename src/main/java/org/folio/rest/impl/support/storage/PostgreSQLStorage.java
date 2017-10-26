@@ -40,6 +40,23 @@ public class PostgreSQLStorage implements Storage {
   }
 
   @Override
+  public CompletableFuture<String> create(
+    String id,
+    Object entity,
+    Context context,
+    String tenantId) throws Exception {
+
+    CompletableFuture<String> future = new CompletableFuture<>();
+
+    PostgresClient postgresClient = PostgresClient.getInstance(
+      context.owner(), TenantTool.calculateTenantId(tenantId));
+
+    postgresClient.save(tableName, id, entity, ResultHandler.complete(future));
+
+    return future;
+  }
+
+  @Override
   public void getById(
     String id,
     Context context,
@@ -61,20 +78,13 @@ public class PostgreSQLStorage implements Storage {
 
     CompletableFuture<Object[]> future = new CompletableFuture<>();
 
-    try {
-      PostgresClient postgresClient = PostgresClient.getInstance(
-        context.owner(), TenantTool.calculateTenantId(tenantId));
+    PostgresClient postgresClient = PostgresClient.getInstance(
+      context.owner(), TenantTool.calculateTenantId(tenantId));
 
-      postgresClient.get(tableName, entityClass, equalityCriteria(id), true, false,
-        ResultHandler.complete(future));
+    postgresClient.get(tableName, entityClass, equalityCriteria(id), true, false,
+      ResultHandler.complete(future));
 
-      return future;
-    }
-    catch(Exception e) {
-      future.completeExceptionally(e);
-
-      return future;
-    }
+    return future;
   }
 
   @Override

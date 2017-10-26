@@ -126,11 +126,12 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Consumer<Throwable> onExceptionalFailure = onExceptionalFailureConsumer(
-      asyncResultHandler,
-      "Unknown failure cause when attempting to create a request",
-      message -> PostRequestStorageRequestsResponse
-        .withPlainInternalServerError(message));
+    Function<Throwable, String> onExceptionalFailure =
+      onExceptionalFailureFunction(
+        asyncResultHandler,
+        "Unknown failure cause when attempting to create a request",
+        message -> PostRequestStorageRequestsResponse
+          .withPlainInternalServerError(message));
 
     try {
       vertxContext.runOnContext(v -> {
@@ -139,23 +140,26 @@ public class RequestsAPI implements RequestStorageResource {
             entity.setId(UUID.randomUUID().toString());
           }
 
-          storage.create(entity.getId(), entity, vertxContext, tenantId,
-            ResultHandler.filter(
-              r -> {
-                OutStream stream = new OutStream();
-                stream.setData(entity);
+          storage.create(entity.getId(), entity, vertxContext, tenantId)
+            .exceptionally(onExceptionalFailure)
+            .thenAccept(r -> {
+              if(r == null) {
+                return;
+              }
 
-                respond(asyncResultHandler,
-                    PostRequestStorageRequestsResponse
-                      .withJsonCreated(r, stream));
-              },
-              onExceptionalFailure));
+              OutStream stream = new OutStream();
+              stream.setData(entity);
+
+              respond(asyncResultHandler,
+                PostRequestStorageRequestsResponse
+                  .withJsonCreated(r, stream));
+            });
         } catch (Exception e) {
-          onExceptionalFailure.accept(e);
+          onExceptionalFailure.apply(e);
         }
       });
     } catch (Exception e) {
-      onExceptionalFailure.accept(e);
+      onExceptionalFailure.apply(e);
     }
   }
 

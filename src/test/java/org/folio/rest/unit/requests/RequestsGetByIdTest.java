@@ -16,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.folio.rest.unit.support.FakeMultipleRecordResult.noRecordsFound;
 import static org.folio.rest.unit.support.FakeMultipleRecordResult.singleRecordFound;
+import static org.folio.rest.unit.support.FutureAssistant.exceptionalFuture;
 import static org.folio.rest.unit.support.HandlerCompletion.complete;
 import static org.folio.rest.unit.support.HandlerCompletion.getOnCompletion;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -97,8 +98,8 @@ public class RequestsGetByIdTest extends AbstractVertxUnitTest {
     String expectedId = UUID.randomUUID().toString();
     Exception expectedException = new Exception("Sample Failure");
 
-    doThrow(expectedException).when(mockStorage)
-      .getById(eq(expectedId), eq(context), eq(TENANT_ID));
+    when(mockStorage.getById(eq(expectedId), eq(context), eq(TENANT_ID)))
+      .thenThrow(expectedException);
 
     AsyncResult<Response> response = getOnCompletion(f -> {
       requestsAPI.getRequestStorageRequestsByRequestId(
@@ -175,15 +176,5 @@ public class RequestsGetByIdTest extends AbstractVertxUnitTest {
     verify(mockLogAssistant, never()).logError(any(), any(Throwable.class));
 
     verify(mockStorage, times(1)).getById(eq(expectedId), eq(context), eq(TENANT_ID));
-  }
-
-  private static <T>  CompletableFuture<T> exceptionalFuture(
-    Exception exception) {
-
-    CompletableFuture<T> future = new CompletableFuture<>();
-
-    future.completeExceptionally(exception);
-
-    return future;
   }
 }
