@@ -9,6 +9,7 @@ import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
+import org.folio.rest.support.ThrowingConsumer;
 import org.folio.rest.tools.utils.TenantTool;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 
@@ -30,19 +31,12 @@ public class PostgreSQLStorage implements Storage {
     Context context,
     String tenantId) {
 
-    CompletableFuture<String> future = new CompletableFuture<>();
-
-    try {
+    return exceptionalCompleter(future -> {
       PostgresClient postgresClient = PostgresClient.getInstance(
         context.owner(), TenantTool.calculateTenantId(tenantId));
 
       postgresClient.save(tableName, id, entity, ResultHandler.complete(future));
-    }
-    catch(Exception e) {
-      future.completeExceptionally(e);
-    }
-
-    return future;
+    });
   }
 
   @Override
@@ -51,39 +45,25 @@ public class PostgreSQLStorage implements Storage {
     Context context,
     String tenantId) {
 
-    CompletableFuture<Object[]> future = new CompletableFuture<>();
-
-    try {
+    return exceptionalCompleter(future -> {
       PostgresClient postgresClient = PostgresClient.getInstance(
         context.owner(), TenantTool.calculateTenantId(tenantId));
 
       postgresClient.get(tableName, entityClass, equalityCriteria(id), true, false,
         ResultHandler.complete(future));
-    }
-    catch(Exception e) {
-      future.completeExceptionally(e);
-    }
-
-    return future;
+    });
   }
 
   @Override
   public CompletableFuture<String> deleteAll(Context context, String tenantId) {
-    CompletableFuture<String> future = new CompletableFuture<>();
-
-    try {
+    return exceptionalCompleter(future -> {
       PostgresClient postgresClient = PostgresClient.getInstance(
         context.owner(), TenantTool.calculateTenantId(tenantId));
 
       postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.%s",
         tenantId, "mod_circulation_storage", tableName),
         ResultHandler.complete(future));
-    }
-    catch(Exception e) {
-      future.completeExceptionally(e);
-    }
-
-    return future;
+    });
   }
 
   @Override
@@ -94,9 +74,7 @@ public class PostgreSQLStorage implements Storage {
     Context context,
     String tenantId) {
 
-    CompletableFuture<Object[]> future = new CompletableFuture<>();
-
-    try {
+    return exceptionalCompleter(future -> {
       PostgresClient postgresClient = PostgresClient.getInstance(
         context.owner(), TenantTool.calculateTenantId(tenantId));
 
@@ -109,12 +87,7 @@ public class PostgreSQLStorage implements Storage {
 
       postgresClient.get(tableName, entityClass, fieldList, cql,
         true, false, ResultHandler.complete(future));
-    }
-    catch(Exception e) {
-      future.completeExceptionally(e);
-    }
-
-    return future;
+    });
   }
 
   @Override
@@ -123,20 +96,13 @@ public class PostgreSQLStorage implements Storage {
     Context context,
     String tenantId) {
 
-    CompletableFuture<UpdateResult> future = new CompletableFuture<>();
-
-    try {
+    return exceptionalCompleter(future -> {
       PostgresClient postgresClient = PostgresClient.getInstance(
         context.owner(), TenantTool.calculateTenantId(tenantId));
 
       postgresClient.delete(tableName, equalityCriteria(id),
         ResultHandler.complete(future));
-    }
-    catch (Exception e) {
-      future.completeExceptionally(e);
-    }
-
-    return future;
+    });
   }
 
   @Override
@@ -146,20 +112,13 @@ public class PostgreSQLStorage implements Storage {
     Context context,
     String tenantId) {
 
-    CompletableFuture<UpdateResult> future = new CompletableFuture<>();
-
-    try {
+    return exceptionalCompleter(future -> {
       PostgresClient postgresClient = PostgresClient.getInstance(
         context.owner(), TenantTool.calculateTenantId(tenantId));
 
       postgresClient.update(tableName, entity, equalityCriteria(id), true,
         ResultHandler.complete(future));
-    }
-    catch (Exception e) {
-      future.completeExceptionally(e);
-    }
-
-    return future;
+    });
   }
 
   private Criterion equalityCriteria(String id) {
@@ -170,5 +129,20 @@ public class PostgreSQLStorage implements Storage {
     a.setValue(id);
 
     return new Criterion(a);
+  }
+
+  private static <T> CompletableFuture<T> exceptionalCompleter(
+    ThrowingConsumer<CompletableFuture<T>, Exception> consumer) {
+
+    CompletableFuture<T> future = new CompletableFuture<>();
+
+    try {
+      consumer.accept(future);
+    }
+    catch (Exception e) {
+      future.completeExceptionally(e);
+    }
+
+    return future;
   }
 }
