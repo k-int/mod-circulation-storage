@@ -1,8 +1,6 @@
 package org.folio.rest.impl.support.storage;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Handler;
 import io.vertx.ext.sql.UpdateResult;
 import org.folio.rest.impl.support.ResultHandler;
 import org.folio.rest.persist.Criteria.Criteria;
@@ -26,20 +24,6 @@ public class PostgreSQLStorage implements Storage {
   }
 
   @Override
-  public void create(
-    String id,
-    Object entity,
-    Context context,
-    String tenantId,
-    Handler<AsyncResult<String>> handleResult) throws Exception {
-
-    PostgresClient postgresClient = PostgresClient.getInstance(
-      context.owner(), TenantTool.calculateTenantId(tenantId));
-
-    postgresClient.save(tableName, id, entity, handleResult);
-  }
-
-  @Override
   public CompletableFuture<String> create(
     String id,
     Object entity,
@@ -49,7 +33,6 @@ public class PostgreSQLStorage implements Storage {
     CompletableFuture<String> future = new CompletableFuture<>();
 
     try {
-
       PostgresClient postgresClient = PostgresClient.getInstance(
         context.owner(), TenantTool.calculateTenantId(tenantId));
 
@@ -60,20 +43,6 @@ public class PostgreSQLStorage implements Storage {
     }
 
     return future;
-  }
-
-  @Override
-  public void getById(
-    String id,
-    Context context,
-    String tenantId,
-    Handler<AsyncResult<Object[]>> handleResult) throws Exception {
-
-    PostgresClient postgresClient = PostgresClient.getInstance(
-      context.owner(), TenantTool.calculateTenantId(tenantId));
-
-    postgresClient.get(tableName, entityClass, equalityCriteria(id), true, false,
-      handleResult);
   }
 
   @Override
@@ -99,20 +68,6 @@ public class PostgreSQLStorage implements Storage {
   }
 
   @Override
-  public void deleteAll(
-    Context context,
-    String tenantId,
-    Handler<AsyncResult<String>> handleResult) throws Exception {
-
-    PostgresClient postgresClient = PostgresClient.getInstance(
-      context.owner(), TenantTool.calculateTenantId(tenantId));
-
-    postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.%s",
-      tenantId, "mod_circulation_storage", tableName),
-      handleResult);
-  }
-
-  @Override
   public CompletableFuture<String> deleteAll(Context context, String tenantId) {
     CompletableFuture<String> future = new CompletableFuture<>();
 
@@ -129,29 +84,6 @@ public class PostgreSQLStorage implements Storage {
     }
 
     return future;
-  }
-
-  @Override
-  public void getAll(
-    int offset,
-    int limit,
-    String query,
-    Context context,
-    String tenantId,
-    Handler<AsyncResult<Object[]>> handleResult) throws Exception {
-
-    PostgresClient postgresClient = PostgresClient.getInstance(
-      context.owner(), TenantTool.calculateTenantId(tenantId));
-
-    String[] fieldList = {"*"};
-
-    CQL2PgJSON cql2pgJson = new CQL2PgJSON(String.format("%s.jsonb", tableName));
-    CQLWrapper cql = new CQLWrapper(cql2pgJson, query)
-      .setLimit(new Limit(limit))
-      .setOffset(new Offset(offset));
-
-    postgresClient.get(tableName, entityClass, fieldList, cql,
-      true, false, handleResult);
   }
 
   @Override
@@ -186,19 +118,6 @@ public class PostgreSQLStorage implements Storage {
   }
 
   @Override
-  public void deleteById(
-    String id,
-    Context context,
-    String tenantId,
-    Handler<AsyncResult<UpdateResult>> handleResult) throws Exception {
-
-    PostgresClient postgresClient = PostgresClient.getInstance(
-      context.owner(), TenantTool.calculateTenantId(tenantId));
-
-    postgresClient.delete(tableName, equalityCriteria(id), handleResult);
-  }
-
-  @Override
   public CompletableFuture<UpdateResult> deleteById(
     String id,
     Context context,
@@ -218,21 +137,6 @@ public class PostgreSQLStorage implements Storage {
     }
 
     return future;
-  }
-
-  @Override
-  public void update(
-    String id,
-    Object entity,
-    Context context,
-    String tenantId,
-    Handler<AsyncResult<UpdateResult>> handleResult) throws Exception {
-
-    PostgresClient postgresClient = PostgresClient.getInstance(
-      context.owner(), TenantTool.calculateTenantId(tenantId));
-
-    postgresClient.update(tableName, entity, equalityCriteria(id), true,
-      handleResult);
   }
 
   @Override
