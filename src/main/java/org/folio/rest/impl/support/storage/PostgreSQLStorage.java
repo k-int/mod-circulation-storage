@@ -180,6 +180,28 @@ public class PostgreSQLStorage implements Storage {
   }
 
   @Override
+  public CompletableFuture<UpdateResult> deleteById(
+    String id,
+    Context context,
+    String tenantId) {
+
+    CompletableFuture<UpdateResult> future = new CompletableFuture<>();
+
+    try {
+      PostgresClient postgresClient = PostgresClient.getInstance(
+        context.owner(), TenantTool.calculateTenantId(tenantId));
+
+      postgresClient.delete(tableName, equalityCriteria(id),
+        ResultHandler.complete(future));
+    }
+    catch (Exception e) {
+      future.completeExceptionally(e);
+    }
+
+    return future;
+  }
+
+  @Override
   public void update(
     String id,
     Object entity,

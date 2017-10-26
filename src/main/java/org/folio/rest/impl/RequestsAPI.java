@@ -216,12 +216,12 @@ public class RequestsAPI implements RequestStorageResource {
     try {
       vertxContext.runOnContext(v -> {
         try {
-          storage.deleteById(requestId, vertxContext, tenantId,
-            ResultHandler.filter(
+          storage.deleteById(requestId, vertxContext, tenantId)
+            .exceptionally(toNullResultFunction(onExceptionalFailure))
+            .thenAccept(doNothingWhenNull(
               r -> respond(asyncResultHandler,
                 DeleteRequestStorageRequestsByRequestIdResponse
-                  .withNoContent()),
-              onExceptionalFailure));
+                  .withNoContent())));
         } catch (Exception e) {
           onExceptionalFailure.accept(e);
         }

@@ -58,6 +58,11 @@ public interface Storage {
     String tenantId,
     Handler<AsyncResult<UpdateResult>> handleResult) throws Exception;
 
+  CompletableFuture<UpdateResult> deleteById(
+    String id,
+    Context context,
+    String tenantId);
+
   void update(
     String id,
     Object entity,
