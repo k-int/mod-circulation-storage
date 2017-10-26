@@ -44,14 +44,20 @@ public class PostgreSQLStorage implements Storage {
     String id,
     Object entity,
     Context context,
-    String tenantId) throws Exception {
+    String tenantId) {
 
     CompletableFuture<String> future = new CompletableFuture<>();
 
-    PostgresClient postgresClient = PostgresClient.getInstance(
-      context.owner(), TenantTool.calculateTenantId(tenantId));
+    try {
 
-    postgresClient.save(tableName, id, entity, ResultHandler.complete(future));
+      PostgresClient postgresClient = PostgresClient.getInstance(
+        context.owner(), TenantTool.calculateTenantId(tenantId));
+
+      postgresClient.save(tableName, id, entity, ResultHandler.complete(future));
+    }
+    catch(Exception e) {
+      future.completeExceptionally(e);
+    }
 
     return future;
   }
@@ -74,15 +80,21 @@ public class PostgreSQLStorage implements Storage {
   public CompletableFuture<Object[]> getById(
     String id,
     Context context,
-    String tenantId) throws Exception {
+    String tenantId) {
 
     CompletableFuture<Object[]> future = new CompletableFuture<>();
 
-    PostgresClient postgresClient = PostgresClient.getInstance(
-      context.owner(), TenantTool.calculateTenantId(tenantId));
+    try {
 
-    postgresClient.get(tableName, entityClass, equalityCriteria(id), true, false,
-      ResultHandler.complete(future));
+      PostgresClient postgresClient = PostgresClient.getInstance(
+        context.owner(), TenantTool.calculateTenantId(tenantId));
+
+      postgresClient.get(tableName, entityClass, equalityCriteria(id), true, false,
+        ResultHandler.complete(future));
+    }
+    catch(Exception e) {
+      future.completeExceptionally(e);
+    }
 
     return future;
   }
@@ -150,6 +162,29 @@ public class PostgreSQLStorage implements Storage {
 
     postgresClient.update(tableName, entity, equalityCriteria(id), true,
       handleResult);
+  }
+
+  @Override
+  public CompletableFuture<UpdateResult> update(
+    String id,
+    Object entity,
+    Context context,
+    String tenantId) {
+
+    CompletableFuture<UpdateResult> future = new CompletableFuture<>();
+
+    try {
+      PostgresClient postgresClient = PostgresClient.getInstance(
+        context.owner(), TenantTool.calculateTenantId(tenantId));
+
+      postgresClient.update(tableName, entity, equalityCriteria(id), true,
+        ResultHandler.complete(future));
+    }
+    catch (Exception e) {
+      future.completeExceptionally(e);
+    }
+
+    return future;
   }
 
   private Criterion equalityCriteria(String id) {

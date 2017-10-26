@@ -97,7 +97,7 @@ public class RequestsPostTest extends AbstractVertxUnitTest {
 
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
-    Exception expectedException = new Exception("Sample Failure");
+    Exception expectedException = new RuntimeException("Sample Failure");
 
     Request exampleRequest = fromJson(Request.class,
       new RequestRequestBuilder().create());

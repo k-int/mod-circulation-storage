@@ -53,7 +53,7 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Consumer<Throwable> onExceptionalFailure = onExceptionalFailureConsumer(
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
       asyncResultHandler,
       "Unknown failure cause when attempting to delete all requests",
       message -> DeleteRequestStorageRequestsResponse
@@ -85,7 +85,7 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Consumer<Throwable> onExceptionalFailure = onExceptionalFailureConsumer(
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
       asyncResultHandler,
       "Unknown failure cause when attempting to get all requests",
       message -> GetRequestStorageRequestsResponse
@@ -126,8 +126,8 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Function<Throwable, String> onExceptionalFailure =
-      onExceptionalFailureFunction(
+    Consumer<Throwable> onExceptionalFailure =
+      onExceptionalFailure(
         asyncResultHandler,
         "Unknown failure cause when attempting to create a request",
         message -> PostRequestStorageRequestsResponse
@@ -141,7 +141,7 @@ public class RequestsAPI implements RequestStorageResource {
           }
 
           storage.create(entity.getId(), entity, vertxContext, tenantId)
-            .exceptionally(onExceptionalFailure)
+            .exceptionally(toNullResultFunction(onExceptionalFailure))
             .thenAccept(r -> {
               if(r == null) {
                 return;
@@ -155,11 +155,11 @@ public class RequestsAPI implements RequestStorageResource {
                   .withJsonCreated(r, stream));
             });
         } catch (Exception e) {
-          onExceptionalFailure.apply(e);
+          onExceptionalFailure.accept(e);
         }
       });
     } catch (Exception e) {
-      onExceptionalFailure.apply(e);
+      onExceptionalFailure.accept(e);
     }
   }
 
@@ -173,8 +173,8 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Function<Throwable, Object[]> onExceptionalFailure =
-      onExceptionalFailureFunction(
+    Consumer<Throwable> onExceptionalFailure =
+      onExceptionalFailure(
         asyncResultHandler,
         "Unknown failure cause when attempting to get a request by ID",
         message -> GetRequestStorageRequestsByRequestIdResponse
@@ -184,12 +184,8 @@ public class RequestsAPI implements RequestStorageResource {
       vertxContext.runOnContext(v -> {
             try {
               storage.getById(requestId, vertxContext, tenantId)
-                .exceptionally(onExceptionalFailure)
-                .thenAccept(r -> {
-                  if(r == null) {
-                    return;
-                  }
-
+                .exceptionally(toNullResultFunction(onExceptionalFailure))
+                .thenAccept(doNothingWhenNull(r -> {
                   SingleResult<Request> result = SingleResult.from(r);
 
                   if (result.isFound()) {
@@ -202,13 +198,13 @@ public class RequestsAPI implements RequestStorageResource {
                       GetRequestStorageRequestsByRequestIdResponse.
                         withPlainNotFound("Not Found"));
                   }
-                });
+                }));
         } catch (Exception e) {
-          onExceptionalFailure.apply(e);
+          onExceptionalFailure.accept(e);
         }
       });
     } catch (Exception e) {
-      onExceptionalFailure.apply(e);
+      onExceptionalFailure.accept(e);
     }
   }
 
@@ -222,7 +218,7 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Consumer<Throwable> onExceptionalFailure = onExceptionalFailureConsumer(
+    Consumer<Throwable> onExceptionalFailure = onExceptionalFailure(
       asyncResultHandler,
       "Unknown failure cause when attempting to delete a request by ID",
       message -> PostRequestStorageRequestsResponse
@@ -256,37 +252,38 @@ public class RequestsAPI implements RequestStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    Consumer<Throwable> onExceptionalFailure = onExceptionalFailureConsumer(
-      asyncResultHandler,
-      "Unknown failure cause when attempting to create or update a request by ID",
-      message -> PostRequestStorageRequestsResponse
-        .withPlainInternalServerError(message));
+    Consumer<Throwable> onExceptionalFailure =
+      onExceptionalFailure(
+        asyncResultHandler,
+        "Unknown failure cause when attempting to get a request by ID",
+        message -> GetRequestStorageRequestsByRequestIdResponse
+          .withPlainInternalServerError(message));
 
     try {
       vertxContext.runOnContext(v -> {
         try {
-          storage.getById(requestId, vertxContext, tenantId,
-            ResultHandler.filter(
-              getAsyncResult -> {
-                SingleResult getResult = SingleResult.from(getAsyncResult);
+          storage.getById(requestId, vertxContext, tenantId)
+            .exceptionally(toNullResultFunction(onExceptionalFailure))
+            .thenAccept(doNothingWhenNull(g -> {
+              SingleResult<Request> getResult = SingleResult.from(g);
 
+              try {
                 if (getResult.isFound()) {
-                  storage.update(requestId, entity, vertxContext, tenantId,
-                    ResultHandler.filter(
-                      r -> respond(asyncResultHandler,
-                        PutRequestStorageRequestsByRequestIdResponse
-                          .withNoContent()),
-                      onExceptionalFailure));
+                  storage.update(requestId, entity, vertxContext, tenantId)
+                    .exceptionally(toNullResultFunction(onExceptionalFailure))
+                    .thenAccept(doNothingWhenNull(r -> respond(asyncResultHandler,
+                      PutRequestStorageRequestsByRequestIdResponse.withNoContent())));
+                } else {
+                  storage.create(entity.getId(), entity, vertxContext, tenantId)
+                    .exceptionally(toNullResultFunction(onExceptionalFailure))
+                    .thenAccept(doNothingWhenNull(r -> respond(asyncResultHandler,
+                      PutRequestStorageRequestsByRequestIdResponse.withNoContent())));
                 }
-                else {
-                  storage.create(entity.getId(), entity, vertxContext, tenantId,
-                    ResultHandler.filter(
-                      r -> respond(asyncResultHandler,
-                        PutRequestStorageRequestsByRequestIdResponse.withNoContent()),
-                      onExceptionalFailure));
-                }
-              },
-              onExceptionalFailure));
+              }
+              catch (Exception e) {
+                onExceptionalFailure.accept(e);
+              }
+            }));
         } catch (Exception e) {
           onExceptionalFailure.accept(e);
         }
@@ -303,7 +300,7 @@ public class RequestsAPI implements RequestStorageResource {
     handler.handle(Future.succeededFuture(response));
   }
 
-  private Consumer<Throwable> onExceptionalFailureConsumer(
+  private Consumer<Throwable> onExceptionalFailure(
     Handler<AsyncResult<Response>> responseHandler,
     String unknownFailureMessage,
     Function<String, Response> failureResponseCreator) {
@@ -314,7 +311,20 @@ public class RequestsAPI implements RequestStorageResource {
     };
   }
 
-  private void respondWithError(Handler<AsyncResult<Response>> responseHandler, String unknownFailureMessage, Function<String, Response> failureResponseCreator, Throwable e) {
+  private static <T> Function<Throwable, T> toNullResultFunction(
+    Consumer<Throwable> exceptionConsumer) {
+    return e -> {
+      exceptionConsumer.accept(e);
+      return null;
+    };
+  }
+
+  private void respondWithError(
+    Handler<AsyncResult<Response>> responseHandler,
+    String unknownFailureMessage,
+    Function<String, Response> failureResponseCreator,
+    Throwable e) {
+
     if(e != null) {
       respond(responseHandler, failureResponseCreator.apply(e.getMessage()));
     }
@@ -332,15 +342,13 @@ public class RequestsAPI implements RequestStorageResource {
     }
   }
 
-  private <T> Function<Throwable, T> onExceptionalFailureFunction(
-    Handler<AsyncResult<Response>> responseHandler,
-    String unknownFailureMessage,
-    Function<String, Response> failureResponseCreator) {
+  private <T> Consumer<T> doNothingWhenNull(Consumer<T> consumer) {
+    return r -> {
+      if(r == null) {
+        return;
+      }
 
-    return e -> {
-      logError(unknownFailureMessage, e);
-      respondWithError(responseHandler, unknownFailureMessage, failureResponseCreator, e);
-      return null;
+      consumer.accept(r);
     };
   }
 }

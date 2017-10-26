@@ -96,7 +96,7 @@ public class RequestsGetByIdTest extends AbstractVertxUnitTest {
     RequestsAPI requestsAPI = new RequestsAPI(mockStorage, mockLogAssistant);
 
     String expectedId = UUID.randomUUID().toString();
-    Exception expectedException = new Exception("Sample Failure");
+    Exception expectedException = new RuntimeException("Sample Failure");
 
     when(mockStorage.getById(eq(expectedId), eq(context), eq(TENANT_ID)))
       .thenThrow(expectedException);

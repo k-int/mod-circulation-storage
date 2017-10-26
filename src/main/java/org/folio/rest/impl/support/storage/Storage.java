@@ -19,7 +19,7 @@ public interface Storage {
     String id,
     Object entity,
     Context context,
-    String tenantId) throws Exception;
+    String tenantId);
 
   void getById(
     String id,
@@ -30,7 +30,7 @@ public interface Storage {
   CompletableFuture<Object[]> getById(
     String id,
     Context context,
-    String tenantId) throws Exception;
+    String tenantId);
 
   void deleteAll(
     Context context,
@@ -57,4 +57,10 @@ public interface Storage {
     Context context,
     String tenantId,
     Handler<AsyncResult<UpdateResult>> handleResult) throws Exception;
+
+  CompletableFuture<UpdateResult> update(
+    String id,
+    Object entity,
+    Context context,
+    String tenantId);
 }
