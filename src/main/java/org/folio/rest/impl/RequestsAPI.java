@@ -2,11 +2,11 @@ package org.folio.rest.impl;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.folio.rest.impl.support.LoggingAssistant;
+import org.folio.rest.impl.support.ResponseAssistant;
 import org.folio.rest.impl.support.SimpleLoggingAssistant;
 import org.folio.rest.impl.support.storage.PostgreSQLStorage;
 import org.folio.rest.impl.support.storage.SingleResult;
@@ -24,6 +24,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.folio.rest.impl.Headers.TENANT_HEADER;
+import static org.folio.rest.impl.support.ConsumerAssistant.doNothingWhenNull;
+import static org.folio.rest.impl.support.ConsumerAssistant.toNullResultFunction;
 
 public class RequestsAPI implements RequestStorageResource {
 
@@ -62,7 +64,7 @@ public class RequestsAPI implements RequestStorageResource {
         storage.deleteAll(vertxContext, tenantId)
           .exceptionally(toNullResultFunction(onExceptionalFailure))
           .thenAccept(doNothingWhenNull(
-            r -> respond(asyncResultHandler,
+            r -> ResponseAssistant.respond(asyncResultHandler,
               DeleteRequestStorageRequestsResponse.withNoContent())));
       }
       catch(Exception e) {
@@ -100,7 +102,7 @@ public class RequestsAPI implements RequestStorageResource {
                 pagedRequests.setRequests(requests);
                 pagedRequests.setTotalRecords((Integer) r[1]);
 
-                respond(asyncResultHandler,
+                ResponseAssistant.respond(asyncResultHandler,
                   GetRequestStorageRequestsResponse.withJsonOK(pagedRequests));
               }));
         } catch (Exception e) {
@@ -141,7 +143,7 @@ public class RequestsAPI implements RequestStorageResource {
               OutStream stream = new OutStream();
               stream.setData(entity);
 
-              respond(asyncResultHandler,
+              ResponseAssistant.respond(asyncResultHandler,
                 PostRequestStorageRequestsResponse.withJsonCreated(r, stream));
             }));
         } catch (Exception e) {
@@ -178,12 +180,12 @@ public class RequestsAPI implements RequestStorageResource {
                   SingleResult<Request> result = SingleResult.from(r);
 
                   if (result.isFound()) {
-                    respond(asyncResultHandler,
+                    ResponseAssistant.respond(asyncResultHandler,
                       GetRequestStorageRequestsByRequestIdResponse.
                         withJsonOK(result.getResult()));
                   }
                   else {
-                    respond(asyncResultHandler,
+                    ResponseAssistant.respond(asyncResultHandler,
                       GetRequestStorageRequestsByRequestIdResponse.
                         withPlainNotFound("Not Found"));
                   }
@@ -218,7 +220,7 @@ public class RequestsAPI implements RequestStorageResource {
           storage.deleteById(requestId, vertxContext, tenantId)
             .exceptionally(toNullResultFunction(onExceptionalFailure))
             .thenAccept(doNothingWhenNull(
-              r -> respond(asyncResultHandler,
+              r -> ResponseAssistant.respond(asyncResultHandler,
                 DeleteRequestStorageRequestsByRequestIdResponse
                   .withNoContent())));
         } catch (Exception e) {
@@ -258,12 +260,12 @@ public class RequestsAPI implements RequestStorageResource {
                 if (getResult.isFound()) {
                   storage.update(requestId, entity, vertxContext, tenantId)
                     .exceptionally(toNullResultFunction(onExceptionalFailure))
-                    .thenAccept(doNothingWhenNull(r -> respond(asyncResultHandler,
+                    .thenAccept(doNothingWhenNull(r -> ResponseAssistant.respond(asyncResultHandler,
                       PutRequestStorageRequestsByRequestIdResponse.withNoContent())));
                 } else {
                   storage.create(entity.getId(), entity, vertxContext, tenantId)
                     .exceptionally(toNullResultFunction(onExceptionalFailure))
-                    .thenAccept(doNothingWhenNull(r -> respond(asyncResultHandler,
+                    .thenAccept(doNothingWhenNull(r -> ResponseAssistant.respond(asyncResultHandler,
                       PutRequestStorageRequestsByRequestIdResponse.withNoContent())));
                 }
               }
@@ -280,13 +282,6 @@ public class RequestsAPI implements RequestStorageResource {
     }
   }
 
-  private void respond(
-    Handler<AsyncResult<Response>> handler,
-    Response response) {
-
-    handler.handle(Future.succeededFuture(response));
-  }
-
   private Consumer<Throwable> onExceptionalFailure(
     Handler<AsyncResult<Response>> responseHandler,
     String unknownFailureMessage,
@@ -294,30 +289,8 @@ public class RequestsAPI implements RequestStorageResource {
 
     return e -> {
       logError(e, unknownFailureMessage);
-      respondWithError(responseHandler, unknownFailureMessage, failureResponseCreator, e);
+      ResponseAssistant.respondWithError(responseHandler, unknownFailureMessage, failureResponseCreator, e);
     };
-  }
-
-  private static <T> Function<Throwable, T> toNullResultFunction(
-    Consumer<Throwable> exceptionConsumer) {
-    return e -> {
-      exceptionConsumer.accept(e);
-      return null;
-    };
-  }
-
-  private void respondWithError(
-    Handler<AsyncResult<Response>> responseHandler,
-    String unknownFailureMessage,
-    Function<String, Response> failureResponseCreator,
-    Throwable e) {
-
-    if(e != null) {
-      respond(responseHandler, failureResponseCreator.apply(e.getMessage()));
-    }
-    else {
-      respond(responseHandler, failureResponseCreator.apply(unknownFailureMessage));
-    }
   }
 
   private void logError(Throwable e, String unknownFailureMessage) {
@@ -327,15 +300,5 @@ public class RequestsAPI implements RequestStorageResource {
     else {
       loggingAssistant.logError(log, unknownFailureMessage);
     }
-  }
-
-  private <T> Consumer<T> doNothingWhenNull(Consumer<T> consumer) {
-    return r -> {
-      if(r == null) {
-        return;
-      }
-
-      consumer.accept(r);
-    };
   }
 }
