@@ -85,7 +85,6 @@ public class PostgreSQLStorage implements Storage {
     CompletableFuture<Object[]> future = new CompletableFuture<>();
 
     try {
-
       PostgresClient postgresClient = PostgresClient.getInstance(
         context.owner(), TenantTool.calculateTenantId(tenantId));
 
@@ -134,6 +133,37 @@ public class PostgreSQLStorage implements Storage {
 
     postgresClient.get(tableName, entityClass, fieldList, cql,
       true, false, handleResult);
+  }
+
+  @Override
+  public CompletableFuture<Object[]> getAll(
+    int offset,
+    int limit,
+    String query,
+    Context context,
+    String tenantId) {
+
+    CompletableFuture<Object[]> future = new CompletableFuture<>();
+
+    try {
+      PostgresClient postgresClient = PostgresClient.getInstance(
+        context.owner(), TenantTool.calculateTenantId(tenantId));
+
+      String[] fieldList = {"*"};
+
+      CQL2PgJSON cql2pgJson = new CQL2PgJSON(String.format("%s.jsonb", tableName));
+      CQLWrapper cql = new CQLWrapper(cql2pgJson, query)
+        .setLimit(new Limit(limit))
+        .setOffset(new Offset(offset));
+
+      postgresClient.get(tableName, entityClass, fieldList, cql,
+        true, false, ResultHandler.complete(future));
+    }
+    catch(Exception e) {
+      future.completeExceptionally(e);
+    }
+
+    return future;
   }
 
   @Override
