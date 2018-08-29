@@ -41,7 +41,8 @@ public class HttpClient {
                    String userId,
                    Handler<HttpClientResponse> responseHandler) {
 
-    HttpClientRequest request = client.postAbs(url.toString(), responseHandler);
+    HttpClientRequest request = client.postAbs(url.toString(),
+      responseHandler);
 
     request.headers().add("Accept","application/json, text/plain");
     request.headers().add("Content-type","application/json");
@@ -57,10 +58,7 @@ public class HttpClient {
     if(body != null) {
       String encodedBody = Json.encodePrettily(body);
 
-      System.out.println(String.format("POST %s, Request: %s",
-        url.toString(), encodedBody));
-
-      log.debug(String.format("POST %s, Request: %s",
+      log.info(String.format("POST %s, Request: %s",
         url.toString(), encodedBody));
 
       request.end(encodedBody);
