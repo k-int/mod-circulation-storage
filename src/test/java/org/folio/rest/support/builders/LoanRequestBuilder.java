@@ -65,6 +65,64 @@ public class LoanRequestBuilder {
     this.systemReturnDate = systemReturnDate;
   }
 
+  public static LoanRequestBuilder from(JsonObject example) {
+    //TODO: Extract constants for properties
+
+    final UUID id = example.containsKey("id")
+      ? UUID.fromString(example.getString("id"))
+      : null;
+
+    final UUID userId = example.containsKey("userId")
+      ? UUID.fromString(example.getString("userId"))
+      : null;
+
+    final UUID itemId = example.containsKey("itemId")
+      ? UUID.fromString(example.getString("itemId"))
+      : null;
+
+    final UUID proxyUserId = example.containsKey("proxyUserId")
+      ? UUID.fromString(example.getString("proxyUserId"))
+      : null;
+
+    final UUID loanPolicyId = example.containsKey("loanPolicyId")
+      ? UUID.fromString(example.getString("loanPolicyId"))
+      : null;
+
+    final DateTime loanDate = example.containsKey("loanDate")
+      ? DateTime.parse(example.getString("loanDate"))
+      : null;
+
+    final DateTime dueDate = example.containsKey("dueDate")
+      ? DateTime.parse(example.getString("dueDate"))
+      : null;
+
+    final DateTime returnDate = example.containsKey("returnDate")
+      ? DateTime.parse(example.getString("returnDate"))
+      : null;
+
+    final DateTime systemReturnDate = example.containsKey("systemReturnDate")
+      ? DateTime.parse(example.getString("systemReturnDate"))
+      : null;
+
+    final String statusName = example.containsKey("status")
+      ? example.getJsonObject("status").getString("name")
+      : null;
+
+    return new LoanRequestBuilder(
+      id,
+      itemId,
+      userId,
+      proxyUserId,
+      loanDate,
+      statusName,
+      example.getString("itemStatus"),
+      example.getString("action"),
+      dueDate,
+      loanPolicyId,
+      returnDate,
+      systemReturnDate);
+  }
+
   public JsonObject create() {
     JsonObject request = new JsonObject();
 
@@ -73,13 +131,16 @@ public class LoanRequestBuilder {
     }
 
     request
-      .put("userId", userId.toString())
       .put("itemId", itemId.toString())
       .put("loanDate", loanDate.toString(ISODateTimeFormat.dateTime()))
       .put("action", action);
 
     if(itemStatus != null) {
       request.put("itemStatus", itemStatus);
+    }
+
+    if(userId != null) {
+      request.put("userId", userId.toString());
     }
 
     if(proxyUserId != null) {
@@ -320,5 +381,9 @@ public class LoanRequestBuilder {
       loanPolicyId,
       this.returnDate,
       this.systemReturnDate);
+  }
+
+  public LoanRequestBuilder withNoUserId() {
+    return withUserId(null);
   }
 }

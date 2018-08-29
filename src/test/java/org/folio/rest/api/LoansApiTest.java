@@ -757,6 +757,42 @@ public class LoansApiTest extends ApiTests {
   }
 
   @Test
+  public void canRemoveUserIdFromClosedLoan()
+    throws InterruptedException,
+    MalformedURLException,
+    TimeoutException,
+    ExecutionException {
+
+    DateTime loanDate = new DateTime(2017, 3, 1, 13, 25, 46, 232, DateTimeZone.UTC);
+    final UUID loanId = UUID.randomUUID();
+    final UUID userId = UUID.randomUUID();
+
+    IndividualResource loan = createLoan(new LoanRequestBuilder()
+      .withId(loanId)
+      .withUserId(userId)
+      .withLoanDate(loanDate)
+      .withDueDate(loanDate.plus(Period.days(14)))
+      .withStatus("Open")
+      .create());
+
+    final LoanRequestBuilder closedLoanRequest = LoanRequestBuilder
+      .from(loan.getJson())
+      .withStatus("Closed");
+
+    final IndividualResource closedLoan = replaceLoan(loanId.toString(),
+      closedLoanRequest);
+
+    final LoanRequestBuilder anonymisedLoanRequest = LoanRequestBuilder
+      .from(closedLoan.getJson())
+      .withNoUserId();
+
+    final IndividualResource anonymisedLoan = replaceLoan(loanId.toString(),
+      anonymisedLoanRequest);
+
+    assertThat(anonymisedLoan.getJson().containsKey("userId"), is(false));
+  }
+
+  @Test
   public void canRenewALoan()
     throws InterruptedException,
     MalformedURLException,
@@ -1289,6 +1325,36 @@ public class LoansApiTest extends ApiTests {
       response.getStatusCode(), is(HttpURLConnection.HTTP_CREATED));
 
     return new IndividualResource(response);
+  }
+
+  private IndividualResource replaceLoan(
+    String id,
+    LoanRequestBuilder builder)
+    throws MalformedURLException,
+    InterruptedException,
+    ExecutionException,
+    TimeoutException {
+
+    final URL location = loanStorageUrl(String.format("/%s", id));
+
+    CompletableFuture<JsonResponse> putCompleted = new CompletableFuture<>();
+
+    client.put(location, builder.create(), StorageTestSuite.TENANT_ID,
+      ResponseHandler.json(putCompleted));
+
+    JsonResponse putResponse = putCompleted.get(5, TimeUnit.SECONDS);
+
+    assertThat(String.format("Failed to update loan: %s", putResponse.getBody()),
+      putResponse.getStatusCode(), is(HttpURLConnection.HTTP_NO_CONTENT));
+
+    CompletableFuture<JsonResponse> getCompleted = new CompletableFuture<>();
+
+    client.get(location, StorageTestSuite.TENANT_ID,
+      ResponseHandler.json(getCompleted));
+
+    final JsonResponse replacedLoan = getCompleted.get(5, TimeUnit.SECONDS);
+
+    return new IndividualResource(replacedLoan);
   }
 
   private JsonObject loanRequest() {
