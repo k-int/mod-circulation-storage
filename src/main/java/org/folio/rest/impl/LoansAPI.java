@@ -6,6 +6,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.folio.rest.annotations.Validate;
+import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Loan;
 import org.folio.rest.jaxrs.model.Loans;
@@ -25,8 +26,10 @@ import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 
 import javax.ws.rs.core.Response;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.UUID;
 
@@ -377,6 +380,21 @@ public class LoansAPI implements LoanStorageResource {
           LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
             .withPlainBadRequest(
               validationResult.getRight())));
+
+      return;
+    }
+
+    if(Objects.equals(entity.getStatus().getName(), "Open")
+      && entity.getUserId() == null) {
+
+      final ArrayList<Error> errors = new ArrayList<>();
+
+      errors.add(new Error().withMessage("Open loan must have a user ID"));
+
+      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+        LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
+          .withJsonUnprocessableEntity(new Errors()
+            .withErrors(errors))));
 
       return;
     }

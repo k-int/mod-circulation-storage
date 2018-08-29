@@ -27,6 +27,9 @@ import java.util.concurrent.TimeoutException;
 
 import static org.folio.rest.support.AdditionalHttpStatusCodes.UNPROCESSABLE_ENTITY;
 import static org.folio.rest.support.JsonObjectMatchers.hasSoleMessgeContaining;
+import static org.folio.rest.support.matchers.ValidationErrorMatchers.hasMessage;
+import static org.folio.rest.support.matchers.ValidationResponseMatchers.isValidationResponseWhich;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
@@ -793,6 +796,56 @@ public class LoansApiTest extends ApiTests {
   }
 
   @Test
+  public void cannotCreateOpenLoanWithoutUserIdViaPut()
+    throws InterruptedException,
+    MalformedURLException,
+    TimeoutException,
+    ExecutionException {
+
+    final UUID loanId = UUID.randomUUID();
+
+    final JsonResponse putResponse = attemptCreateOrReplaceLoan(loanId.toString(),
+      new LoanRequestBuilder()
+      .withId(loanId)
+      .withStatus("Open")
+      .withNoUserId());
+
+    assertThat("Should be refused due to validation error",
+      putResponse, isValidationResponseWhich(
+        hasMessage("Open loan must have a user ID")
+      ));
+  }
+
+  @Test
+  public void cannotRemoveUserIdFromOpenLoan()
+    throws InterruptedException,
+    MalformedURLException,
+    TimeoutException,
+    ExecutionException {
+
+    final UUID loanId = UUID.randomUUID();
+    final UUID userId = UUID.randomUUID();
+
+    IndividualResource loan = createLoan(new LoanRequestBuilder()
+      .withId(loanId)
+      .withUserId(userId)
+      .withStatus("Open")
+      .create());
+
+    final LoanRequestBuilder loanRequestWithoutId = LoanRequestBuilder
+      .from(loan.getJson())
+      .withNoUserId();
+
+    final JsonResponse putResponse = attemptCreateOrReplaceLoan(loanId.toString(),
+      loanRequestWithoutId);
+
+    assertThat("Should be refused due to validation error",
+      putResponse, isValidationResponseWhich(
+        hasMessage("Open loan must have a user ID")
+      ));
+  }
+
+  @Test
   public void canRenewALoan()
     throws InterruptedException,
     MalformedURLException,
@@ -1314,12 +1367,7 @@ public class LoansApiTest extends ApiTests {
     ExecutionException,
     TimeoutException {
 
-    CompletableFuture<JsonResponse> createCompleted = new CompletableFuture<>();
-
-    client.post(loanStorageUrl(), loanRequest, StorageTestSuite.TENANT_ID,
-      ResponseHandler.json(createCompleted));
-
-    JsonResponse response = createCompleted.get(5, TimeUnit.SECONDS);
+    final JsonResponse response = attemptCreateLoan(loanRequest);
 
     assertThat(String.format("Failed to create loan: %s", response.getBody()),
       response.getStatusCode(), is(HttpURLConnection.HTTP_CREATED));
@@ -1327,7 +1375,47 @@ public class LoansApiTest extends ApiTests {
     return new IndividualResource(response);
   }
 
+  private JsonResponse attemptCreateLoan(LoanRequestBuilder builder)
+    throws MalformedURLException,
+    InterruptedException,
+    ExecutionException,
+    TimeoutException {
+
+    return attemptCreateLoan(builder.create());
+  }
+
+  private JsonResponse attemptCreateLoan(JsonObject representation)
+    throws MalformedURLException,
+      InterruptedException,
+      ExecutionException,
+      TimeoutException {
+
+    CompletableFuture<JsonResponse> createCompleted = new CompletableFuture<>();
+
+    client.post(loanStorageUrl(), representation, StorageTestSuite.TENANT_ID,
+      ResponseHandler.json(createCompleted));
+
+    return createCompleted.get(5, TimeUnit.SECONDS);
+  }
+
   private IndividualResource replaceLoan(
+    String id,
+    LoanRequestBuilder builder)
+    throws MalformedURLException,
+    InterruptedException,
+    ExecutionException,
+    TimeoutException {
+
+
+    final JsonResponse putResponse = attemptCreateOrReplaceLoan(id, builder);
+
+    assertThat(String.format("Failed to update loan: %s", putResponse.getBody()),
+      putResponse.getStatusCode(), is(HttpURLConnection.HTTP_NO_CONTENT));
+
+    return getLoan(id);
+  }
+
+  private JsonResponse attemptCreateOrReplaceLoan(
     String id,
     LoanRequestBuilder builder)
     throws MalformedURLException,
@@ -1342,10 +1430,16 @@ public class LoansApiTest extends ApiTests {
     client.put(location, builder.create(), StorageTestSuite.TENANT_ID,
       ResponseHandler.json(putCompleted));
 
-    JsonResponse putResponse = putCompleted.get(5, TimeUnit.SECONDS);
+    return putCompleted.get(5, TimeUnit.SECONDS);
+  }
 
-    assertThat(String.format("Failed to update loan: %s", putResponse.getBody()),
-      putResponse.getStatusCode(), is(HttpURLConnection.HTTP_NO_CONTENT));
+  private IndividualResource getLoan(String id)
+    throws MalformedURLException,
+    InterruptedException,
+    ExecutionException,
+    TimeoutException {
+
+    final URL location = loanStorageUrl(String.format("/%s", id));
 
     CompletableFuture<JsonResponse> getCompleted = new CompletableFuture<>();
 
@@ -1353,6 +1447,8 @@ public class LoansApiTest extends ApiTests {
       ResponseHandler.json(getCompleted));
 
     final JsonResponse replacedLoan = getCompleted.get(5, TimeUnit.SECONDS);
+
+    assertThat(replacedLoan.getStatusCode(), is(200));
 
     return new IndividualResource(replacedLoan);
   }
