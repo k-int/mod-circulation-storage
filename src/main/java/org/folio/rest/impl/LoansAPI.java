@@ -44,6 +44,7 @@ public class LoansAPI implements LoanStorageResource {
   private static final String LOAN_HISTORY_TABLE = "audit_loan";
 
   private static final Class<Loan> LOAN_CLASS = Loan.class;
+  private static final String OPEN_LOAN_STATUS = "Open";
 
   public LoansAPI(Vertx vertx, String tenantId) {
     PostgresClient.getInstance(vertx, tenantId).setIdField("_id");
@@ -157,7 +158,7 @@ public class LoansAPI implements LoanStorageResource {
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
     if(entity.getStatus() == null) {
-      entity.setStatus(new Status().withName("Open"));
+      entity.setStatus(new Status().withName(OPEN_LOAN_STATUS));
     }
 
     if(isOpenAndHasNoUserId(entity)) {
@@ -384,7 +385,7 @@ public class LoansAPI implements LoanStorageResource {
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
     if(entity.getStatus() == null) {
-      entity.setStatus(new Status().withName("Open"));
+      entity.setStatus(new Status().withName(OPEN_LOAN_STATUS));
     }
 
     ImmutablePair<Boolean, String> validationResult = validateLoan(entity);
@@ -666,7 +667,7 @@ public class LoansAPI implements LoanStorageResource {
   }
 
   private boolean isOpenAndHasNoUserId(Loan loan) {
-    return Objects.equals(loan.getStatus().getName(), "Open")
+    return Objects.equals(loan.getStatus().getName(), OPEN_LOAN_STATUS)
       && loan.getUserId() == null;
   }
 }
