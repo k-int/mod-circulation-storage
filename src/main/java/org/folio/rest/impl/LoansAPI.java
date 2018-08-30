@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.UUID;
 
+import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.impl.Headers.TENANT_HEADER;
 
 public class LoansAPI implements LoanStorageResource {
@@ -64,11 +65,11 @@ public class LoansAPI implements LoanStorageResource {
 
         postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.loan",
           tenantId, "mod_circulation_storage"),
-          reply -> asyncResultHandler.handle(Future.succeededFuture(
+          reply -> asyncResultHandler.handle(succeededFuture(
             DeleteLoanStorageLoansResponse.withNoContent())));
       }
       catch(Exception e) {
-        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+        asyncResultHandler.handle(succeededFuture(
           LoanStorageResource.DeleteLoanStorageLoansResponse
             .withPlainInternalServerError(e.getMessage())));
       }
@@ -114,32 +115,32 @@ public class LoansAPI implements LoanStorageResource {
                   pagedLoans.setLoans(loans);
                   pagedLoans.setTotalRecords(reply.result().getResultInfo().getTotalRecords());
 
-                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+                  asyncResultHandler.handle(succeededFuture(
                     LoanStorageResource.GetLoanStorageLoansResponse.
                       withJsonOK(pagedLoans)));
                 }
                 else {
-                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+                  asyncResultHandler.handle(succeededFuture(
                     LoanStorageResource.GetLoanStorageLoansResponse.
                       withPlainInternalServerError(reply.cause().getMessage())));
                 }
               } catch (Exception e) {
                 log.error(e);
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+                asyncResultHandler.handle(succeededFuture(
                   LoanStorageResource.GetLoanStorageLoansResponse.
                     withPlainInternalServerError(e.getMessage())));
               }
             });
         } catch (Exception e) {
           log.error(e);
-          asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+          asyncResultHandler.handle(succeededFuture(
             LoanStorageResource.GetLoanStorageLoansResponse.
               withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
       log.error(e);
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+      asyncResultHandler.handle(succeededFuture(
         LoanStorageResource.GetLoanStorageLoansResponse.
           withPlainInternalServerError(e.getMessage())));
     }
@@ -166,7 +167,7 @@ public class LoansAPI implements LoanStorageResource {
 
       errors.add(new Error().withMessage("Open loan must have a user ID"));
 
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+      asyncResultHandler.handle(succeededFuture(
         LoanStorageResource.PostLoanStorageLoansResponse
           .withJsonUnprocessableEntity(new Errors()
             .withErrors(errors))));
@@ -178,7 +179,7 @@ public class LoansAPI implements LoanStorageResource {
 
     if(!validationResult.getLeft()) {
       asyncResultHandler.handle(
-        io.vertx.core.Future.succeededFuture(
+        succeededFuture(
           LoanStorageResource.PostLoanStorageLoansResponse
             .withPlainBadRequest(
               validationResult.getRight())));
@@ -206,19 +207,19 @@ public class LoansAPI implements LoanStorageResource {
                   stream.setData(entity);
 
                   asyncResultHandler.handle(
-                    io.vertx.core.Future.succeededFuture(
+                    succeededFuture(
                       LoanStorageResource.PostLoanStorageLoansResponse
                         .withJsonCreated(reply.result(), stream)));
                 }
                 else {
                   if(isMultipleOpenLoanError(reply)) {
                     asyncResultHandler.handle(
-                      io.vertx.core.Future.succeededFuture(LoanStorageResource.PostLoanStorageLoansResponse
+                      succeededFuture(LoanStorageResource.PostLoanStorageLoansResponse
                       .withJsonUnprocessableEntity(moreThanOneOpenLoanError(entity))));
                   }
                   else {
                     asyncResultHandler.handle(
-                      io.vertx.core.Future.succeededFuture(
+                      succeededFuture(
                         LoanStorageResource.PostLoanStorageLoansResponse
                           .withPlainInternalServerError(reply.cause().toString())));
                   }
@@ -226,21 +227,21 @@ public class LoansAPI implements LoanStorageResource {
               } catch (Exception e) {
                 log.error(e);
                 asyncResultHandler.handle(
-                  io.vertx.core.Future.succeededFuture(
+                  succeededFuture(
                     LoanStorageResource.PostLoanStorageLoansResponse
                       .withPlainInternalServerError(e.getMessage())));
               }
             });
         } catch (Exception e) {
           log.error(e);
-          asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+          asyncResultHandler.handle(succeededFuture(
             LoanStorageResource.PostLoanStorageLoansResponse
               .withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
       log.error(e);
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+      asyncResultHandler.handle(succeededFuture(
         LoanStorageResource.PostLoanStorageLoansResponse
           .withPlainInternalServerError(e.getMessage())));
     }
@@ -282,40 +283,40 @@ public class LoansAPI implements LoanStorageResource {
                     Loan loan = loans.get(0);
 
                     asyncResultHandler.handle(
-                      io.vertx.core.Future.succeededFuture(
+                      succeededFuture(
                         LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
                           withJsonOK(loan)));
                   }
                   else {
                     asyncResultHandler.handle(
-                      Future.succeededFuture(
+                      succeededFuture(
                         LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
                           withPlainNotFound("Not Found")));
                   }
                 } else {
                   asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                       LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
                         withPlainInternalServerError(reply.cause().getMessage())));
 
                 }
               } catch (Exception e) {
                 log.error(e);
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+                asyncResultHandler.handle(succeededFuture(
                   LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
                     withPlainInternalServerError(e.getMessage())));
               }
             });
         } catch (Exception e) {
           log.error(e);
-          asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+          asyncResultHandler.handle(succeededFuture(
             LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
               withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
       log.error(e);
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+      asyncResultHandler.handle(succeededFuture(
         LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
           withPlainInternalServerError(e.getMessage())));
     }
@@ -350,24 +351,24 @@ public class LoansAPI implements LoanStorageResource {
             reply -> {
               if(reply.succeeded()) {
                 asyncResultHandler.handle(
-                  Future.succeededFuture(
+                  succeededFuture(
                     DeleteLoanStorageLoansByLoanIdResponse
                       .withNoContent()));
               }
               else {
-                asyncResultHandler.handle(Future.succeededFuture(
+                asyncResultHandler.handle(succeededFuture(
                   DeleteLoanStorageLoansByLoanIdResponse
                     .withPlainInternalServerError(reply.cause().getMessage())));
               }
             });
         } catch (Exception e) {
-          asyncResultHandler.handle(Future.succeededFuture(
+          asyncResultHandler.handle(succeededFuture(
             DeleteLoanStorageLoansByLoanIdResponse
               .withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
-      asyncResultHandler.handle(Future.succeededFuture(
+      asyncResultHandler.handle(succeededFuture(
         DeleteLoanStorageLoansByLoanIdResponse
           .withPlainInternalServerError(e.getMessage())));
     }
@@ -391,7 +392,7 @@ public class LoansAPI implements LoanStorageResource {
 
     if(!validationResult.getLeft()) {
       asyncResultHandler.handle(
-        io.vertx.core.Future.succeededFuture(
+        succeededFuture(
           LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
             .withPlainBadRequest(
               validationResult.getRight())));
@@ -406,7 +407,7 @@ public class LoansAPI implements LoanStorageResource {
 
       errors.add(new Error().withMessage("Open loan must have a user ID"));
 
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+      asyncResultHandler.handle(succeededFuture(
         LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
           .withJsonUnprocessableEntity(new Errors()
             .withErrors(errors))));
@@ -446,34 +447,34 @@ public class LoansAPI implements LoanStorageResource {
                             stream.setData(entity);
 
                             asyncResultHandler.handle(
-                              Future.succeededFuture(
+                              succeededFuture(
                                 PutLoanStorageLoansByLoanIdResponse
                                   .withNoContent()));
                           }
                           else {
                             if(isMultipleOpenLoanError(update)) {
                               asyncResultHandler.handle(
-                                io.vertx.core.Future.succeededFuture(
+                                succeededFuture(
                                   LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
                                   .withJsonUnprocessableEntity(
                                     moreThanOneOpenLoanError(entity))));
                             }
                             else {
                               asyncResultHandler.handle(
-                                io.vertx.core.Future.succeededFuture(
+                                succeededFuture(
                                   LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
                                     .withPlainInternalServerError(update.cause().toString())));
                             }
                           }
                         } catch (Exception e) {
                           asyncResultHandler.handle(
-                            Future.succeededFuture(
+                            succeededFuture(
                               PutLoanStorageLoansByLoanIdResponse
                                 .withPlainInternalServerError(e.getMessage())));
                         }
                       });
                   } catch (Exception e) {
-                    asyncResultHandler.handle(Future.succeededFuture(
+                    asyncResultHandler.handle(succeededFuture(
                       PutLoanStorageLoansByLoanIdResponse
                         .withPlainInternalServerError(e.getMessage())));
                   }
@@ -488,52 +489,52 @@ public class LoansAPI implements LoanStorageResource {
                             stream.setData(entity);
 
                             asyncResultHandler.handle(
-                              Future.succeededFuture(
+                              succeededFuture(
                                 PutLoanStorageLoansByLoanIdResponse
                                   .withNoContent()));
                           }
                           else {
                             if(isMultipleOpenLoanError(save)) {
                               asyncResultHandler.handle(
-                                io.vertx.core.Future.succeededFuture(
+                                succeededFuture(
                                   LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
                                   .withJsonUnprocessableEntity(
                                     moreThanOneOpenLoanError(entity))));
                             }
                             else {
                               asyncResultHandler.handle(
-                                io.vertx.core.Future.succeededFuture(
+                                succeededFuture(
                                   LoanStorageResource.PostLoanStorageLoansResponse
                                     .withPlainInternalServerError(save.cause().toString())));
                             }
                           }
                         } catch (Exception e) {
                           asyncResultHandler.handle(
-                            Future.succeededFuture(
+                            succeededFuture(
                               PutLoanStorageLoansByLoanIdResponse
                                 .withPlainInternalServerError(e.getMessage())));
                         }
                       });
                   } catch (Exception e) {
-                    asyncResultHandler.handle(Future.succeededFuture(
+                    asyncResultHandler.handle(succeededFuture(
                       PutLoanStorageLoansByLoanIdResponse
                         .withPlainInternalServerError(e.getMessage())));
                   }
                 }
               } else {
-                asyncResultHandler.handle(Future.succeededFuture(
+                asyncResultHandler.handle(succeededFuture(
                   PutLoanStorageLoansByLoanIdResponse
                     .withPlainInternalServerError(reply.cause().getMessage())));
               }
             });
         } catch (Exception e) {
-          asyncResultHandler.handle(Future.succeededFuture(
+          asyncResultHandler.handle(succeededFuture(
             PutLoanStorageLoansByLoanIdResponse
               .withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
-      asyncResultHandler.handle(Future.succeededFuture(
+      asyncResultHandler.handle(succeededFuture(
         PutLoanStorageLoansByLoanIdResponse
           .withPlainInternalServerError(e.getMessage())));
     }
@@ -622,33 +623,33 @@ public class LoansAPI implements LoanStorageResource {
                   pagedLoans.setLoans(loans);
                   pagedLoans.setTotalRecords(reply.result().getResultInfo().getTotalRecords());
 
-                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+                  asyncResultHandler.handle(succeededFuture(
                     GetLoanStorageLoanHistoryResponse.
                       withJsonOK(pagedLoans)));
                 }
                 else {
                   log.error(reply.cause().getMessage(), reply.cause());
-                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+                  asyncResultHandler.handle(succeededFuture(
                     GetLoanStorageLoanHistoryResponse.
                       withPlainInternalServerError(reply.cause().getMessage())));
                 }
               } catch (Exception e) {
                 log.error(e.getMessage(), e);
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+                asyncResultHandler.handle(succeededFuture(
                   GetLoanStorageLoanHistoryResponse.
                     withPlainInternalServerError(e.getMessage())));
               }
             });
         } catch (Exception e) {
           log.error(e.getMessage(), e);
-          asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+          asyncResultHandler.handle(succeededFuture(
             GetLoanStorageLoanHistoryResponse.
               withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
       log.error(e.getMessage(), e);
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+      asyncResultHandler.handle(succeededFuture(
         GetLoanStorageLoanHistoryResponse.
           withPlainInternalServerError(e.getMessage())));
     }
