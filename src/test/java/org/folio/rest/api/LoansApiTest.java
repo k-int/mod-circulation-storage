@@ -30,6 +30,7 @@ import static org.folio.rest.support.JsonObjectMatchers.hasSoleMessgeContaining;
 import static org.folio.rest.support.matchers.LoanStatusMatchers.isClosed;
 import static org.folio.rest.support.matchers.LoanStatusMatchers.isOpen;
 import static org.folio.rest.support.matchers.ValidationErrorMatchers.hasMessage;
+import static org.folio.rest.support.matchers.ValidationErrorMatchers.hasMessageContaining;
 import static org.folio.rest.support.matchers.ValidationResponseMatchers.isValidationResponseWhich;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -423,19 +424,10 @@ public class LoansApiTest extends ApiTests {
       .open()
       .create();
 
-    CompletableFuture<JsonErrorResponse> createCompleted = new CompletableFuture<>();
+    JsonResponse response = attemptCreateLoan(secondLoanRequest);
 
-    client.post(loanStorageUrl(), secondLoanRequest, StorageTestSuite.TENANT_ID,
-      ResponseHandler.jsonErrors(createCompleted));
-
-    JsonErrorResponse response = createCompleted.get(5, TimeUnit.SECONDS);
-
-    assertThat(String.format("Creating the loan should fail: %s", response.getBody()),
-      response.getStatusCode(), is(UNPROCESSABLE_ENTITY));
-
-    //TODO: Replace with error response matcher
-    assertThat(response.getErrors(),
-      hasSoleMessgeContaining("Cannot have more than one open loan for the same item"));
+    assertThat(response, isValidationResponseWhich(
+      hasMessage("Cannot have more than one open loan for the same item")));
   }
 
   @Test
@@ -462,19 +454,11 @@ public class LoansApiTest extends ApiTests {
       .open()
       .create();
 
-    CompletableFuture<JsonErrorResponse> secondCreateCompleted = new CompletableFuture<>();
+    JsonResponse response = attemptCreateOrReplaceLoan(
+      secondLoanId.toString(), secondLoanRequest);
 
-    client.put(loanStorageUrl(String.format("/%s", secondLoanId.toString())), secondLoanRequest,
-      StorageTestSuite.TENANT_ID, ResponseHandler.jsonErrors(secondCreateCompleted));
-
-    JsonErrorResponse response = secondCreateCompleted.get(5, TimeUnit.SECONDS);
-
-    assertThat(String.format("Creating the loan should fail: %s", response.getBody()),
-      response.getStatusCode(), is(UNPROCESSABLE_ENTITY));
-
-    //TODO: Replace with error response matcher
-    assertThat(response.getErrors(),
-      hasSoleMessgeContaining("Cannot have more than one open loan for the same item"));
+    assertThat(response, isValidationResponseWhich(
+      hasMessage("Cannot have more than one open loan for the same item")));
   }
 
   @Test
@@ -732,13 +716,10 @@ public class LoansApiTest extends ApiTests {
       .open()
       .withNoUserId();
 
-    final JsonResponse putResponse = attemptCreateLoan(
-      loanRequest);
+    final JsonResponse putResponse = attemptCreateLoan(loanRequest);
 
-    assertThat("Should be refused due to validation error",
-      putResponse, isValidationResponseWhich(
-        hasMessage("Open loan must have a user ID")
-      ));
+    assertThat(putResponse, isValidationResponseWhich(
+      hasMessage("Open loan must have a user ID")));
   }
 
   @Test
@@ -758,10 +739,8 @@ public class LoansApiTest extends ApiTests {
     final JsonResponse putResponse = attemptCreateOrReplaceLoan(
       loanId.toString(), loanRequest);
 
-    assertThat("Should be refused due to validation error",
-      putResponse, isValidationResponseWhich(
-        hasMessage("Open loan must have a user ID")
-      ));
+    assertThat(putResponse, isValidationResponseWhich(
+      hasMessage("Open loan must have a user ID")));
   }
 
   @Test
@@ -784,13 +763,11 @@ public class LoansApiTest extends ApiTests {
       .from(loan.getJson())
       .withNoUserId();
 
-    final JsonResponse putResponse = attemptCreateOrReplaceLoan(loanId.toString(),
-      loanRequestWithoutId);
+    final JsonResponse putResponse = attemptCreateOrReplaceLoan(
+      loanId.toString(), loanRequestWithoutId);
 
-    assertThat("Should be refused due to validation error",
-      putResponse, isValidationResponseWhich(
-        hasMessage("Open loan must have a user ID")
-      ));
+    assertThat(putResponse, isValidationResponseWhich(
+      hasMessage("Open loan must have a user ID")));
   }
 
   @Test
@@ -859,19 +836,11 @@ public class LoansApiTest extends ApiTests {
     JsonObject reopenLoanRequest = closedLoan.copyJson()
       .put("status", new JsonObject().put("name", "Open"));
 
-    CompletableFuture<JsonErrorResponse> reopenRequestCompleted = new CompletableFuture<>();
+    JsonResponse response = attemptCreateOrReplaceLoan(
+      closedLoan.getId(), reopenLoanRequest);
 
-    client.put(loanStorageUrl(String.format("/%s", closedLoan.getId())), reopenLoanRequest,
-      StorageTestSuite.TENANT_ID, ResponseHandler.jsonErrors(reopenRequestCompleted));
-
-    JsonErrorResponse response = reopenRequestCompleted.get(5, TimeUnit.SECONDS);
-
-    //TODO: Replace with error response matcher
-    assertThat(String.format("Re-opening the loan should fail: %s", response.getBody()),
-      response.getStatusCode(), is(UNPROCESSABLE_ENTITY));
-
-    assertThat(response.getErrors(),
-      hasSoleMessgeContaining("Cannot have more than one open loan for the same item"));
+    assertThat(response, isValidationResponseWhich(
+      hasMessage("Cannot have more than one open loan for the same item")));
   }
 
   @Test
@@ -1249,9 +1218,8 @@ public class LoansApiTest extends ApiTests {
 
     JsonErrorResponse response = createCompleted.get(5, TimeUnit.SECONDS);
 
-    //TODO: Replace with error response matcher
-    assertThat(response.getStatusCode(), is(UNPROCESSABLE_ENTITY));
-    assertThat(response.getErrors(), hasSoleMessgeContaining("Unrecognized field"));
+    assertThat(response, isValidationResponseWhich(
+      hasMessageContaining("Unrecognized field")));
   }
 
   @Test
@@ -1277,9 +1245,8 @@ public class LoansApiTest extends ApiTests {
 
     JsonErrorResponse response = createCompleted.get(5, TimeUnit.SECONDS);
 
-    //TODO: Replace with error response matcher
-    assertThat(response.getStatusCode(), is(UNPROCESSABLE_ENTITY));
-    assertThat(response.getErrors(), hasSoleMessgeContaining("Unrecognized field"));
+    assertThat(response, isValidationResponseWhich(
+      hasMessageContaining("Unrecognized field")));
   }
 
   private JsonResponse getById(UUID id)
