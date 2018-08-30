@@ -877,28 +877,14 @@ public class LoansApiTest extends ApiTests {
       .withDueDate(loanDate.plus(Period.days(14)))
       .create());
 
-    JsonObject returnedLoan = loan.copyJson();
+    LoanRequestBuilder returnedLoan = LoanRequestBuilder.from(loan.getJson())
+      .withDueDate(new DateTime(2017, 3, 30, 13, 25, 46, DateTimeZone.UTC))
+      .withAction("renewed")
+      .withItemStatus("Checked out")
+      .withRenewalCount(1);
 
-    returnedLoan
-      .put("dueDate", new DateTime(2017, 3, 30, 13, 25, 46, DateTimeZone.UTC)
-        .toString(ISODateTimeFormat.dateTime()))
-      .put("action", "renewed")
-      .put("itemStatus", "Checked out")
-      .put("renewalCount", 1);
-
-    CompletableFuture<JsonResponse> putCompleted = new CompletableFuture<>();
-
-    client.put(loanStorageUrl(String.format("/%s", loan.getId())), returnedLoan,
-      StorageTestSuite.TENANT_ID, ResponseHandler.json(putCompleted));
-
-    JsonResponse putResponse = putCompleted.get(5, TimeUnit.SECONDS);
-
-    assertThat(String.format("Failed to update loan: %s", putResponse.getBody()),
-      putResponse.getStatusCode(), is(HttpURLConnection.HTTP_NO_CONTENT));
-
-    JsonResponse updatedLoanResponse = getById(UUID.fromString(loan.getId()));
-
-    JsonObject updatedLoan = updatedLoanResponse.getJson();
+    final JsonObject updatedLoan = replaceLoan(loan.getId(), returnedLoan)
+      .getJson();
 
     //The RAML-Module-Builder converts all date-time formatted strings to UTC
     //and presents the offset as +0000 (which is ISO8601 compatible, but not RFC3339)
