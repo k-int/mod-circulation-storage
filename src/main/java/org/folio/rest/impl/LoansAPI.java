@@ -151,25 +151,26 @@ public class LoansAPI implements LoanStorageResource {
   @Override
   public void postLoanStorageLoans(
     String lang,
-    Loan entity,
+    Loan loan,
     Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    if(entity.getStatus() == null) {
-      entity.setStatus(new Status().withName(OPEN_LOAN_STATUS));
+    if(loan.getStatus() == null) {
+      loan.setStatus(new Status().withName(OPEN_LOAN_STATUS));
     }
 
-    if(isOpenAndHasNoUserId(entity)) {
+    if(isOpenAndHasNoUserId(loan)) {
       respondWithError(asyncResultHandler,
         PostLoanStorageLoansResponse::withJsonUnprocessableEntity,
         "Open loan must have a user ID");
       return;
     }
 
-    ImmutablePair<Boolean, String> validationResult = validateLoan(entity);
+    //TODO: Convert this to use validation responses (422 and error of errors)
+    ImmutablePair<Boolean, String> validationResult = validateLoan(loan);
 
     if(!validationResult.getLeft()) {
       asyncResultHandler.handle(
@@ -189,16 +190,16 @@ public class LoansAPI implements LoanStorageResource {
       vertxContext.runOnContext(v -> {
         try {
 
-          if(entity.getId() == null) {
-            entity.setId(UUID.randomUUID().toString());
+          if(loan.getId() == null) {
+            loan.setId(UUID.randomUUID().toString());
           }
 
-          postgresClient.save(LOAN_TABLE, entity.getId(), entity,
+          postgresClient.save(LOAN_TABLE, loan.getId(), loan,
             reply -> {
               try {
                 if(reply.succeeded()) {
                   OutStream stream = new OutStream();
-                  stream.setData(entity);
+                  stream.setData(loan);
 
                   asyncResultHandler.handle(
                     succeededFuture(
@@ -209,7 +210,7 @@ public class LoansAPI implements LoanStorageResource {
                   if(isMultipleOpenLoanError(reply)) {
                     asyncResultHandler.handle(
                       succeededFuture(LoanStorageResource.PostLoanStorageLoansResponse
-                      .withJsonUnprocessableEntity(moreThanOneOpenLoanError(entity))));
+                      .withJsonUnprocessableEntity(moreThanOneOpenLoanError(loan))));
                   }
                   else {
                     asyncResultHandler.handle(
@@ -372,17 +373,17 @@ public class LoansAPI implements LoanStorageResource {
   public void putLoanStorageLoansByLoanId(
     String loanId,
     String lang,
-    Loan entity, Map<String, String> okapiHeaders,
+    Loan loan, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    if(entity.getStatus() == null) {
-      entity.setStatus(new Status().withName(OPEN_LOAN_STATUS));
+    if(loan.getStatus() == null) {
+      loan.setStatus(new Status().withName(OPEN_LOAN_STATUS));
     }
 
-    ImmutablePair<Boolean, String> validationResult = validateLoan(entity);
+    ImmutablePair<Boolean, String> validationResult = validateLoan(loan);
 
     if(!validationResult.getLeft()) {
       asyncResultHandler.handle(
@@ -394,7 +395,7 @@ public class LoansAPI implements LoanStorageResource {
       return;
     }
 
-    if(isOpenAndHasNoUserId(entity)) {
+    if(isOpenAndHasNoUserId(loan)) {
       respondWithError(asyncResultHandler,
         PutLoanStorageLoansByLoanIdResponse::withJsonUnprocessableEntity,
         "Open loan must have a user ID");
@@ -424,13 +425,13 @@ public class LoansAPI implements LoanStorageResource {
 
                 if (loanList.size() == 1) {
                   try {
-                    postgresClient.update(LOAN_TABLE, entity, criterion,
+                    postgresClient.update(LOAN_TABLE, loan, criterion,
                       true,
                       update -> {
                         try {
                           if(update.succeeded()) {
                             OutStream stream = new OutStream();
-                            stream.setData(entity);
+                            stream.setData(loan);
 
                             asyncResultHandler.handle(
                               succeededFuture(
@@ -443,7 +444,7 @@ public class LoansAPI implements LoanStorageResource {
                                 succeededFuture(
                                   LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
                                   .withJsonUnprocessableEntity(
-                                    moreThanOneOpenLoanError(entity))));
+                                    moreThanOneOpenLoanError(loan))));
                             }
                             else {
                               asyncResultHandler.handle(
@@ -467,12 +468,12 @@ public class LoansAPI implements LoanStorageResource {
                 }
                 else {
                   try {
-                    postgresClient.save(LOAN_TABLE, entity.getId(), entity,
+                    postgresClient.save(LOAN_TABLE, loan.getId(), loan,
                       save -> {
                         try {
                           if(save.succeeded()) {
                             OutStream stream = new OutStream();
-                            stream.setData(entity);
+                            stream.setData(loan);
 
                             asyncResultHandler.handle(
                               succeededFuture(
@@ -485,7 +486,7 @@ public class LoansAPI implements LoanStorageResource {
                                 succeededFuture(
                                   LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
                                   .withJsonUnprocessableEntity(
-                                    moreThanOneOpenLoanError(entity))));
+                                    moreThanOneOpenLoanError(loan))));
                             }
                             else {
                               asyncResultHandler.handle(
