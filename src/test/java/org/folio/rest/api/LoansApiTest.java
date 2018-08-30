@@ -188,7 +188,7 @@ public class LoansApiTest extends ApiTests {
   }
 
   @Test
-  public void canCreateAClosedLoanWithReturnDates()
+  public void canCreateAnAlreadyClosedLoan()
     throws InterruptedException,
     ExecutionException,
     TimeoutException,
@@ -228,6 +228,12 @@ public class LoansApiTest extends ApiTests {
 
     JsonObject loan = response.getJson();
 
+    assertThat("should have have a status",
+      loan.containsKey("status"), is(true));
+
+    assertThat("status is not open",
+      loan.getJsonObject("status").getString("name"), is("Closed"));
+
     assertThat("return date does not match",
       loan.getString("returnDate"), is("2017-04-01T11:35:00.000Z"));
 
@@ -238,7 +244,7 @@ public class LoansApiTest extends ApiTests {
   }
 
   @Test
-  public void canCreateALoanAtASpecificLocation()
+  public void canCreateALoanAtViaPutToSpecificLocation()
     throws MalformedURLException,
     InterruptedException,
     ExecutionException,
@@ -476,7 +482,7 @@ public class LoansApiTest extends ApiTests {
   }
 
   @Test
-  public void cannotCreateMultipleOpenLoansAtSpecificLocationForSameItem()
+  public void cannotCreateMultipleOpenLoansForSameItemViaPutToSpecificLocation()
     throws InterruptedException,
     MalformedURLException,
     TimeoutException,
@@ -710,15 +716,17 @@ public class LoansApiTest extends ApiTests {
   }
 
   @Test
-  public void canCompleteALoanByReturningTheItem()
+  public void canCloseALoanByReturningTheItem()
     throws InterruptedException,
     MalformedURLException,
     TimeoutException,
     ExecutionException {
 
     DateTime loanDate = new DateTime(2017, 3, 1, 13, 25, 46, 232, DateTimeZone.UTC);
+    final UUID userId = UUID.randomUUID();
 
     IndividualResource loan = createLoan(new LoanRequestBuilder()
+      .withUserId(userId)
       .withLoanDate(loanDate)
       .withDueDate(loanDate.plus(Period.days(14)))
       .create());
@@ -745,6 +753,8 @@ public class LoansApiTest extends ApiTests {
     JsonResponse updatedLoanResponse = getById(UUID.fromString(loan.getId()));
 
     JsonObject updatedLoan = updatedLoanResponse.getJson();
+
+    assertThat(updatedLoan.getString("userId"), is(userId.toString()));
 
     assertThat(updatedLoan.getString("returnDate"),
       is("2017-03-05T14:23:41.000Z"));
