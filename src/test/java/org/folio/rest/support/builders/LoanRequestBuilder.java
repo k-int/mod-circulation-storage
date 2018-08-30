@@ -294,6 +294,14 @@ public class LoanRequestBuilder {
       this.renewalCount);
   }
 
+  public LoanRequestBuilder open() {
+    return withStatus("Open");
+  }
+
+  public LoanRequestBuilder closed() {
+    return withStatus("Closed");
+  }
+
   public LoanRequestBuilder withItemStatus(String itemStatus) {
     return new LoanRequestBuilder(
       this.id,
