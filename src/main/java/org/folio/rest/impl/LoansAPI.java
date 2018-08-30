@@ -159,6 +159,21 @@ public class LoansAPI implements LoanStorageResource {
       entity.setStatus(new Status().withName("Open"));
     }
 
+    if(Objects.equals(entity.getStatus().getName(), "Open")
+      && entity.getUserId() == null) {
+
+      final ArrayList<Error> errors = new ArrayList<>();
+
+      errors.add(new Error().withMessage("Open loan must have a user ID"));
+
+      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+        LoanStorageResource.PostLoanStorageLoansResponse
+          .withJsonUnprocessableEntity(new Errors()
+            .withErrors(errors))));
+
+      return;
+    }
+
     ImmutablePair<Boolean, String> validationResult = validateLoan(entity);
 
     if(!validationResult.getLeft()) {

@@ -796,6 +796,24 @@ public class LoansApiTest extends ApiTests {
   }
 
   @Test
+  public void cannotCreateOpenLoanWithoutUserId()
+    throws InterruptedException,
+    MalformedURLException,
+    TimeoutException,
+    ExecutionException {
+
+    final JsonResponse putResponse = attemptCreateLoan(
+      new LoanRequestBuilder()
+        .withStatus("Open")
+        .withNoUserId());
+
+    assertThat("Should be refused due to validation error",
+      putResponse, isValidationResponseWhich(
+        hasMessage("Open loan must have a user ID")
+      ));
+  }
+
+  @Test
   public void cannotCreateOpenLoanWithoutUserIdViaPut()
     throws InterruptedException,
     MalformedURLException,
