@@ -160,8 +160,7 @@ public class LoansAPI implements LoanStorageResource {
       entity.setStatus(new Status().withName("Open"));
     }
 
-    if(Objects.equals(entity.getStatus().getName(), "Open")
-      && entity.getUserId() == null) {
+    if(isOpenAndHasNoUserId(entity)) {
 
       final ArrayList<Error> errors = new ArrayList<>();
 
@@ -400,8 +399,7 @@ public class LoansAPI implements LoanStorageResource {
       return;
     }
 
-    if(Objects.equals(entity.getStatus().getName(), "Open")
-      && entity.getUserId() == null) {
+    if(isOpenAndHasNoUserId(entity)) {
 
       final ArrayList<Error> errors = new ArrayList<>();
 
@@ -665,5 +663,10 @@ public class LoansAPI implements LoanStorageResource {
     return reply.cause() instanceof GenericDatabaseException &&
       ((GenericDatabaseException) reply.cause()).errorMessage().message()
         .contains("loan_itemid_idx_unique");
+  }
+
+  private boolean isOpenAndHasNoUserId(Loan loan) {
+    return Objects.equals(loan.getStatus().getName(), "Open")
+      && loan.getUserId() == null;
   }
 }
