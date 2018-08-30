@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.impl.Headers.TENANT_HEADER;
@@ -162,16 +163,9 @@ public class LoansAPI implements LoanStorageResource {
     }
 
     if(isOpenAndHasNoUserId(entity)) {
-
-      final ArrayList<Error> errors = new ArrayList<>();
-
-      errors.add(new Error().withMessage("Open loan must have a user ID"));
-
-      asyncResultHandler.handle(succeededFuture(
-        LoanStorageResource.PostLoanStorageLoansResponse
-          .withJsonUnprocessableEntity(new Errors()
-            .withErrors(errors))));
-
+      respondWithError(asyncResultHandler,
+        PostLoanStorageLoansResponse::withJsonUnprocessableEntity,
+        "Open loan must have a user ID");
       return;
     }
 
@@ -401,16 +395,9 @@ public class LoansAPI implements LoanStorageResource {
     }
 
     if(isOpenAndHasNoUserId(entity)) {
-
-      final ArrayList<Error> errors = new ArrayList<>();
-
-      errors.add(new Error().withMessage("Open loan must have a user ID"));
-
-      asyncResultHandler.handle(succeededFuture(
-        LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
-          .withJsonUnprocessableEntity(new Errors()
-            .withErrors(errors))));
-
+      respondWithError(asyncResultHandler,
+        PutLoanStorageLoansByLoanIdResponse::withJsonUnprocessableEntity,
+        "Open loan must have a user ID");
       return;
     }
 
@@ -669,5 +656,21 @@ public class LoansAPI implements LoanStorageResource {
   private boolean isOpenAndHasNoUserId(Loan loan) {
     return Objects.equals(loan.getStatus().getName(), OPEN_LOAN_STATUS)
       && loan.getUserId() == null;
+  }
+
+  private void respondWithError(
+    Handler<AsyncResult<Response>> asyncResultHandler,
+    Function<Errors, Response> responseCreator,
+    String message) {
+
+    final ArrayList<Error> errorsList = new ArrayList<>();
+
+    errorsList.add(new Error().withMessage(message));
+
+    final Errors errors = new Errors()
+      .withErrors(errorsList);
+
+    asyncResultHandler.handle(succeededFuture(
+      responseCreator.apply(errors)));
   }
 }
