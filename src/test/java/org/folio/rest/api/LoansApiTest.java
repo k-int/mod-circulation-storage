@@ -228,7 +228,7 @@ public class LoansApiTest extends ApiTests {
 
     JsonObject loan = response.getJson();
 
-    assertThat("should have have a status",
+    assertThat("should have a status",
       loan.containsKey("status"), is(true));
 
     assertThat("status is not open",
@@ -241,6 +241,36 @@ public class LoansApiTest extends ApiTests {
     //and presents the offset as +0000 (which is ISO8601 compatible, but not RFC3339)
     assertThat("system return date does not match",
       loan.getString("systemReturnDate"), is("2017-04-01T12:00:00.000+0000"));
+  }
+
+  @Test
+  public void canCreateAnAlreadyClosedLoanWithoutUserId()
+    throws InterruptedException,
+    ExecutionException,
+    TimeoutException,
+    MalformedURLException {
+
+    UUID id = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+
+    JsonObject loanRequest = new LoanRequestBuilder()
+      .withId(id)
+      .withNoUserId()
+      .withStatus("Closed")
+      .create();
+
+    final IndividualResource createLoanResponse = createLoan(loanRequest);
+
+    JsonObject loan = createLoanResponse.getJson();
+
+    assertThat("should have a status",
+      loan.containsKey("status"), is(true));
+
+    assertThat("status is not open",
+      loan.getJsonObject("status").getString("name"), is("Closed"));
+
+    assertThat("should not have a user ID",
+      loan.containsKey("userId"), is(false));
   }
 
   @Test
