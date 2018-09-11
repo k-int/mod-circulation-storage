@@ -530,26 +530,20 @@ public class LoansAPI implements LoanStorageResource {
       }
 
       postgresClient.get(LOAN_HISTORY_TABLE, LOAN_CLASS, fieldList, adjustedQuery,
-        true, false, reply -> {
-          try {
-            if(reply.succeeded()) {
-              @SuppressWarnings("unchecked")
-              List<Loan> loans = (List<Loan>) reply.result().getResults();
+        true, false, new ResultHandlerFactory<Results>().when(
+          results -> {
+            @SuppressWarnings("unchecked")
+            List<Loan> loans = (List<Loan>) results.getResults();
 
-              Loans pagedLoans = new Loans();
-              pagedLoans.setLoans(loans);
-              pagedLoans.setTotalRecords(reply.result().getResultInfo().getTotalRecords());
+            Loans pagedLoans = new Loans();
+            
+            pagedLoans.setLoans(loans);
+            pagedLoans.setTotalRecords(results.getResultInfo().getTotalRecords());
 
-              responseHandler.handle(succeededFuture(
-                GetLoanStorageLoanHistoryResponse.withJsonOK(pagedLoans)));
-            }
-            else {
-              serverErrorResponder.withError(reply.cause());
-            }
-          } catch (Exception e) {
-            serverErrorResponder.withError(e);
-          }
-        });
+            responseHandler.handle(succeededFuture(
+              GetLoanStorageLoanHistoryResponse.withJsonOK(pagedLoans)));
+          },
+        serverErrorResponder::withError));
     });
   }
 
