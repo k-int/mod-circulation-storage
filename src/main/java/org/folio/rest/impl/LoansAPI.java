@@ -536,7 +536,7 @@ public class LoansAPI implements LoanStorageResource {
             List<Loan> loans = (List<Loan>) results.getResults();
 
             Loans pagedLoans = new Loans();
-            
+
             pagedLoans.setLoans(loans);
             pagedLoans.setTotalRecords(results.getResultInfo().getTotalRecords());
 
@@ -579,10 +579,6 @@ public class LoansAPI implements LoanStorageResource {
     return ValidationHelper.createValidationErrorMessage(
       "itemId", entity.getItemId(),
       "Cannot have more than one open loan for the same item");
-  }
-
-  private <T> boolean isMultipleOpenLoanError(AsyncResult<T> reply) {
-    return isMultipleOpenLoanError(reply.cause());
   }
 
   private boolean isMultipleOpenLoanError(Throwable cause) {
