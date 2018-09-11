@@ -517,34 +517,6 @@ public class LoansAPI implements LoanStorageResource {
     }
   }
 
-  private ImmutablePair<Boolean, String> validateLoan(Loan loan) {
-
-    Boolean valid = true;
-    StringJoiner messages = new StringJoiner("\n");
-
-    //ISO8601 is less strict than RFC3339 so will not catch some issues
-    try {
-      DateTime.parse(loan.getLoanDate());
-    }
-    catch(Exception e) {
-      valid = false;
-      messages.add("loan date must be a date time (in RFC3339 format)");
-    }
-
-    if(loan.getReturnDate() != null) {
-      //ISO8601 is less strict than RFC3339 so will not catch some issues
-      try {
-        DateTime.parse(loan.getReturnDate());
-      }
-      catch(Exception e) {
-        valid = false;
-        messages.add("return date must be a date time (in RFC3339 format)");
-      }
-    }
-
-    return new ImmutablePair<>(valid, messages.toString());
-  }
-
   @Validate
   @Override
   public void getLoanStorageLoanHistory(int offset, int limit, String query, String lang,
@@ -632,6 +604,34 @@ public class LoansAPI implements LoanStorageResource {
     }
   }
 
+  private ImmutablePair<Boolean, String> validateLoan(Loan loan) {
+
+    Boolean valid = true;
+    StringJoiner messages = new StringJoiner("\n");
+
+    //ISO8601 is less strict than RFC3339 so will not catch some issues
+    try {
+      DateTime.parse(loan.getLoanDate());
+    }
+    catch(Exception e) {
+      valid = false;
+      messages.add("loan date must be a date time (in RFC3339 format)");
+    }
+
+    if(loan.getReturnDate() != null) {
+      //ISO8601 is less strict than RFC3339 so will not catch some issues
+      try {
+        DateTime.parse(loan.getReturnDate());
+      }
+      catch(Exception e) {
+        valid = false;
+        messages.add("return date must be a date time (in RFC3339 format)");
+      }
+    }
+
+    return new ImmutablePair<>(valid, messages.toString());
+  }
+  
   private Errors moreThanOneOpenLoanError(Loan entity) {
     return ValidationHelper.createValidationErrorMessage(
       "itemId", entity.getItemId(),
