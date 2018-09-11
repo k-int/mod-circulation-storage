@@ -328,7 +328,14 @@ public class LoansAPI implements LoanStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    try {
+    final ServerErrorResponder serverErrorResponder =
+      new ServerErrorResponder(DeleteLoanStorageLoansByLoanIdResponse
+        ::withPlainInternalServerError, responseHandler, log);
+
+    final VertxContextRunner runner = new VertxContextRunner(
+      vertxContext, serverErrorResponder::withError);
+
+    runner.runOnContext(() -> {
       PostgresClient postgresClient =
         PostgresClient.getInstance(
           vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
@@ -341,33 +348,21 @@ public class LoansAPI implements LoanStorageResource {
 
       Criterion criterion = new Criterion(a);
 
-      vertxContext.runOnContext(v -> {
-        try {
-          postgresClient.delete(LOAN_TABLE, criterion,
-            reply -> {
-              if(reply.succeeded()) {
-                responseHandler.handle(
-                  succeededFuture(
-                    DeleteLoanStorageLoansByLoanIdResponse
-                      .withNoContent()));
-              }
-              else {
-                responseHandler.handle(succeededFuture(
-                  DeleteLoanStorageLoansByLoanIdResponse
-                    .withPlainInternalServerError(reply.cause().getMessage())));
-              }
-            });
-        } catch (Exception e) {
-          responseHandler.handle(succeededFuture(
-            DeleteLoanStorageLoansByLoanIdResponse
-              .withPlainInternalServerError(e.getMessage())));
-        }
-      });
-    } catch (Exception e) {
-      responseHandler.handle(succeededFuture(
-        DeleteLoanStorageLoansByLoanIdResponse
-          .withPlainInternalServerError(e.getMessage())));
-    }
+      postgresClient.delete(LOAN_TABLE, criterion,
+        reply -> {
+          if(reply.succeeded()) {
+            responseHandler.handle(
+              succeededFuture(
+                DeleteLoanStorageLoansByLoanIdResponse
+                  .withNoContent()));
+          }
+          else {
+            responseHandler.handle(succeededFuture(
+              DeleteLoanStorageLoansByLoanIdResponse
+                .withPlainInternalServerError(reply.cause().getMessage())));
+          }
+        });
+    });
   }
 
   @Override
