@@ -67,10 +67,14 @@ public class LoansAPI implements LoanStorageResource {
   public void deleteLoanStorageLoans(
     String lang,
     Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
+    Handler<AsyncResult<Response>> responseHandler,
     Context vertxContext) {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
+
+    final ServerErrorResponder serverErrorResponder =
+      new ServerErrorResponder(DeleteLoanStorageLoansResponse
+        ::withPlainInternalServerError, responseHandler, log);
 
     vertxContext.runOnContext(v -> {
       try {
@@ -79,13 +83,11 @@ public class LoansAPI implements LoanStorageResource {
 
         postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.loan",
           tenantId, MODULE_NAME),
-          reply -> asyncResultHandler.handle(succeededFuture(
+          reply -> responseHandler.handle(succeededFuture(
             DeleteLoanStorageLoansResponse.withNoContent())));
       }
       catch(Exception e) {
-        asyncResultHandler.handle(succeededFuture(
-          LoanStorageResource.DeleteLoanStorageLoansResponse
-            .withPlainInternalServerError(e.getMessage())));
+        serverErrorResponder.withError(e);
       }
     });
   }
