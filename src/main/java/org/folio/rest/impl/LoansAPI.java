@@ -76,19 +76,17 @@ public class LoansAPI implements LoanStorageResource {
       new ServerErrorResponder(DeleteLoanStorageLoansResponse
         ::withPlainInternalServerError, responseHandler, log);
 
-    vertxContext.runOnContext(v -> {
-      try {
-        PostgresClient postgresClient = PostgresClient.getInstance(
-          vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
+    final VertxContextRunner runner = new VertxContextRunner(
+      vertxContext, serverErrorResponder::withError);
 
-        postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.loan",
-          tenantId, MODULE_NAME),
-          reply -> responseHandler.handle(succeededFuture(
-            DeleteLoanStorageLoansResponse.withNoContent())));
-      }
-      catch(Exception e) {
-        serverErrorResponder.withError(e);
-      }
+    runner.runOnContext(() -> {
+      PostgresClient postgresClient = PostgresClient.getInstance(
+        vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
+
+      postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.loan",
+        tenantId, MODULE_NAME),
+        reply -> responseHandler.handle(succeededFuture(
+          DeleteLoanStorageLoansResponse.withNoContent())));
     });
   }
 
