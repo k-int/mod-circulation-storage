@@ -392,9 +392,15 @@ public class LoansAPI implements LoanStorageResource {
       return;
     }
 
-    try {
-      PostgresClient postgresClient =
-        PostgresClient.getInstance(
+    final ServerErrorResponder serverErrorResponder =
+      new ServerErrorResponder(PutLoanStorageLoansByLoanIdResponse
+        ::withPlainInternalServerError, responseHandler, log);
+
+    final VertxContextRunner runner = new VertxContextRunner(
+      vertxContext, serverErrorResponder::withError);
+
+    runner.runOnContext(() -> {
+      PostgresClient postgresClient = PostgresClient.getInstance(
           vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
 
       Criteria a = new Criteria();
@@ -405,116 +411,84 @@ public class LoansAPI implements LoanStorageResource {
 
       Criterion criterion = new Criterion(a);
 
-      vertxContext.runOnContext(v -> {
-        try {
-          postgresClient.get(LOAN_TABLE, LOAN_CLASS, criterion, true, false,
-            reply -> {
-              if(reply.succeeded()) {
-                @SuppressWarnings("unchecked")
-                List<Loan> loanList = (List<Loan>) reply.result().getResults();
+      postgresClient.get(LOAN_TABLE, LOAN_CLASS, criterion, true, false,
+        reply -> {
+          if(reply.succeeded()) {
+            @SuppressWarnings("unchecked")
+            List<Loan> loanList = (List<Loan>) reply.result().getResults();
 
-                if (loanList.size() == 1) {
-                  try {
-                    postgresClient.update(LOAN_TABLE, loan, criterion,
-                      true,
-                      update -> {
-                        try {
-                          if(update.succeeded()) {
-                            OutStream stream = new OutStream();
-                            stream.setData(loan);
+            if (loanList.size() == 1) {
+              try {
+                postgresClient.update(LOAN_TABLE, loan, criterion,
+                  true,
+                  update -> {
+                    try {
+                      if(update.succeeded()) {
+                        OutStream stream = new OutStream();
+                        stream.setData(loan);
 
-                            responseHandler.handle(
-                              succeededFuture(
-                                PutLoanStorageLoansByLoanIdResponse
-                                  .withNoContent()));
-                          }
-                          else {
-                            if(isMultipleOpenLoanError(update)) {
-                              responseHandler.handle(
-                                succeededFuture(
-                                  LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
-                                  .withJsonUnprocessableEntity(
-                                    moreThanOneOpenLoanError(loan))));
-                            }
-                            else {
-                              responseHandler.handle(
-                                succeededFuture(
-                                  LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
-                                    .withPlainInternalServerError(update.cause().toString())));
-                            }
-                          }
-                        } catch (Exception e) {
+                        responseHandler.handle(
+                          succeededFuture(
+                            PutLoanStorageLoansByLoanIdResponse
+                              .withNoContent()));
+                      }
+                      else {
+                        if(isMultipleOpenLoanError(update)) {
                           responseHandler.handle(
                             succeededFuture(
-                              PutLoanStorageLoansByLoanIdResponse
-                                .withPlainInternalServerError(e.getMessage())));
+                              LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
+                              .withJsonUnprocessableEntity(
+                                moreThanOneOpenLoanError(loan))));
                         }
-                      });
-                  } catch (Exception e) {
-                    responseHandler.handle(succeededFuture(
-                      PutLoanStorageLoansByLoanIdResponse
-                        .withPlainInternalServerError(e.getMessage())));
-                  }
-                }
-                else {
-                  try {
-                    postgresClient.save(LOAN_TABLE, loan.getId(), loan,
-                      save -> {
-                        try {
-                          if(save.succeeded()) {
-                            OutStream stream = new OutStream();
-                            stream.setData(loan);
-
-                            responseHandler.handle(
-                              succeededFuture(
-                                PutLoanStorageLoansByLoanIdResponse
-                                  .withNoContent()));
-                          }
-                          else {
-                            if(isMultipleOpenLoanError(save)) {
-                              responseHandler.handle(
-                                succeededFuture(
-                                  LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
-                                  .withJsonUnprocessableEntity(
-                                    moreThanOneOpenLoanError(loan))));
-                            }
-                            else {
-                              responseHandler.handle(
-                                succeededFuture(
-                                  LoanStorageResource.PostLoanStorageLoansResponse
-                                    .withPlainInternalServerError(save.cause().toString())));
-                            }
-                          }
-                        } catch (Exception e) {
-                          responseHandler.handle(
-                            succeededFuture(
-                              PutLoanStorageLoansByLoanIdResponse
-                                .withPlainInternalServerError(e.getMessage())));
+                        else {
+                          serverErrorResponder.withError(update.cause());
                         }
-                      });
-                  } catch (Exception e) {
-                    responseHandler.handle(succeededFuture(
-                      PutLoanStorageLoansByLoanIdResponse
-                        .withPlainInternalServerError(e.getMessage())));
-                  }
-                }
-              } else {
-                responseHandler.handle(succeededFuture(
-                  PutLoanStorageLoansByLoanIdResponse
-                    .withPlainInternalServerError(reply.cause().getMessage())));
+                      }
+                    } catch (Exception e) {
+                      serverErrorResponder.withError(e);
+                    }
+                  });
+              } catch (Exception e) {
+                serverErrorResponder.withError(e);
               }
-            });
-        } catch (Exception e) {
-          responseHandler.handle(succeededFuture(
-            PutLoanStorageLoansByLoanIdResponse
-              .withPlainInternalServerError(e.getMessage())));
-        }
-      });
-    } catch (Exception e) {
-      responseHandler.handle(succeededFuture(
-        PutLoanStorageLoansByLoanIdResponse
-          .withPlainInternalServerError(e.getMessage())));
-    }
+            }
+            else {
+              try {
+                postgresClient.save(LOAN_TABLE, loan.getId(), loan,
+                  save -> {
+                    try {
+                      if(save.succeeded()) {
+                        OutStream stream = new OutStream();
+                        stream.setData(loan);
+
+                        responseHandler.handle(succeededFuture(
+                            PutLoanStorageLoansByLoanIdResponse
+                              .withNoContent()));
+                      }
+                      else {
+                        if(isMultipleOpenLoanError(save)) {
+                          responseHandler.handle(succeededFuture(
+                            LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
+                              .withJsonUnprocessableEntity(
+                                moreThanOneOpenLoanError(loan))));
+                        }
+                        else {
+                          serverErrorResponder.withError(save.cause());
+                        }
+                      }
+                    } catch (Exception e) {
+                      serverErrorResponder.withError(e);
+                    }
+                  });
+              } catch (Exception e) {
+                serverErrorResponder.withError(e);
+              }
+            }
+          } else {
+            serverErrorResponder.withError(reply.cause());
+          }
+        });
+    });
   }
 
   @Validate
@@ -631,7 +605,7 @@ public class LoansAPI implements LoanStorageResource {
 
     return new ImmutablePair<>(valid, messages.toString());
   }
-  
+
   private Errors moreThanOneOpenLoanError(Loan entity) {
     return ValidationHelper.createValidationErrorMessage(
       "itemId", entity.getItemId(),
