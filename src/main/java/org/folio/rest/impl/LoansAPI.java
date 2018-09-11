@@ -412,10 +412,10 @@ public class LoansAPI implements LoanStorageResource {
       Criterion criterion = new Criterion(a);
 
       postgresClient.get(LOAN_TABLE, LOAN_CLASS, criterion, true, false,
-        reply -> {
-          if(reply.succeeded()) {
+        new ResultHandlerFactory<Results>().when(
+          results -> {
             @SuppressWarnings("unchecked")
-            List<Loan> loanList = (List<Loan>) reply.result().getResults();
+            List<Loan> loanList = (List<Loan>) results.getResults();
 
             if (loanList.size() == 1) {
               try {
@@ -472,10 +472,9 @@ public class LoansAPI implements LoanStorageResource {
                 serverErrorResponder.withError(e);
               }
             }
-          } else {
-            serverErrorResponder.withError(reply.cause());
-          }
-        });
+
+          },
+        serverErrorResponder::withError));
     });
   }
 
