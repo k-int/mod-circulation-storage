@@ -5,9 +5,9 @@ import java.util.function.Consumer;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 
-public class ResultHandlerFactory {
-  public Handler<AsyncResult<String>> when(
-    Consumer<String> onSuccess,
+public class ResultHandlerFactory<T> {
+  public Handler<AsyncResult<T>> when(
+    Consumer<T> onSuccess,
     Consumer<Throwable> onFailure) {
 
     return result -> {
@@ -33,7 +33,7 @@ public class ResultHandlerFactory {
     };
   }
 
-  private boolean hasNoCause(AsyncResult<String> result) {
+  private boolean hasNoCause(AsyncResult<T> result) {
     return new ServerError().isUnknown(result.cause());
   }
 }

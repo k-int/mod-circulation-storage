@@ -17,7 +17,8 @@ import io.vertx.core.Handler;
 public class ResultHandlerFactoryTest {
   @Test
   public void shouldExecuteConsumerOnSuccess() {
-    final ResultHandlerFactory resultHandlerFactory = new ResultHandlerFactory();
+    final ResultHandlerFactory<String> resultHandlerFactory
+      = new ResultHandlerFactory<>();
 
     AtomicBoolean onSuccessCalled = new AtomicBoolean(false);
     AtomicBoolean onFailureCalled = new AtomicBoolean(false);
@@ -38,7 +39,8 @@ public class ResultHandlerFactoryTest {
 
   @Test
   public void shouldExecuteConsumerOnFailure() {
-    final ResultHandlerFactory resultHandlerFactory = new ResultHandlerFactory();
+    final ResultHandlerFactory<String> resultHandlerFactory
+      = new ResultHandlerFactory<>();
 
     AtomicBoolean onSuccessCalled = new AtomicBoolean(false);
     AtomicBoolean onFailureCalled = new AtomicBoolean(false);
@@ -59,7 +61,8 @@ public class ResultHandlerFactoryTest {
 
   @Test
   public void shouldExecuteFailureConsumerOnExceptionInSuccessConsumer() {
-    final ResultHandlerFactory resultHandlerFactory = new ResultHandlerFactory();
+    final ResultHandlerFactory<String> resultHandlerFactory
+      = new ResultHandlerFactory<>();
 
     final RuntimeException expectedException
       = new RuntimeException("Something went wrong in success handler");
@@ -79,7 +82,8 @@ public class ResultHandlerFactoryTest {
 
   @Test
   public void shouldExecuteFailureConsumerWhenResultIsNull() {
-    final ResultHandlerFactory resultHandlerFactory = new ResultHandlerFactory();
+    final ResultHandlerFactory<String> resultHandlerFactory
+      = new ResultHandlerFactory<>();
 
     AtomicReference<Throwable> receivedException = new AtomicReference<>();
 
@@ -99,7 +103,8 @@ public class ResultHandlerFactoryTest {
 
   @Test
   public void shouldExecuteFailureConsumerWhenFailureCauseIsNull() {
-    final ResultHandlerFactory resultHandlerFactory = new ResultHandlerFactory();
+    final ResultHandlerFactory<String> resultHandlerFactory
+      = new ResultHandlerFactory<>();
 
     AtomicReference<Throwable> receivedException = new AtomicReference<>();
 

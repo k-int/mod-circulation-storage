@@ -29,6 +29,7 @@ import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
+import org.folio.rest.persist.interfaces.Results;
 import org.folio.rest.tools.utils.OutStream;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
@@ -89,7 +90,7 @@ public class LoansAPI implements LoanStorageResource {
 
       postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.loan",
         tenantId, MODULE_NAME),
-        new ResultHandlerFactory().when(
+        new ResultHandlerFactory<String>().when(
           s -> noContentResponder.respond(),
           serverErrorResponder::withError));
     });
@@ -129,32 +130,20 @@ public class LoansAPI implements LoanStorageResource {
         .setOffset(new Offset(offset));
 
       postgresClient.get(LOAN_TABLE, LOAN_CLASS, fieldList, cql,
-        true, false, reply -> {
-          try {
-            if(reply.succeeded()) {
-              @SuppressWarnings("unchecked")
-              List<Loan> loans = (List<Loan>) reply.result().getResults();
+        true, false, new ResultHandlerFactory<Results>().when(
+          results -> {
+            @SuppressWarnings("unchecked")
+            List<Loan> loans = (List<Loan>) results.getResults();
 
-              Loans pagedLoans = new Loans();
-              pagedLoans.setLoans(loans);
-              pagedLoans.setTotalRecords(reply.result().getResultInfo().getTotalRecords());
+            Loans pagedLoans = new Loans();
+            pagedLoans.setLoans(loans);
+            pagedLoans.setTotalRecords(results.getResultInfo().getTotalRecords());
 
-              responseHandler.handle(succeededFuture(
-                LoanStorageResource.GetLoanStorageLoansResponse.
-                  withJsonOK(pagedLoans)));
-            }
-            else {
-              responseHandler.handle(succeededFuture(
-                LoanStorageResource.GetLoanStorageLoansResponse.
-                  withPlainInternalServerError(reply.cause().getMessage())));
-            }
-          } catch (Exception e) {
-            log.error(e);
             responseHandler.handle(succeededFuture(
               LoanStorageResource.GetLoanStorageLoansResponse.
-                withPlainInternalServerError(e.getMessage())));
-          }
-        });
+                withJsonOK(pagedLoans)));
+          },
+          serverErrorResponder::withError));
     });
   }
 
@@ -288,7 +277,7 @@ public class LoansAPI implements LoanStorageResource {
       log.info(String.format("Anonymization SQL: %s", combinedAnonymizationSql));
 
       postgresClient.mutate(combinedAnonymizationSql,
-        new ResultHandlerFactory().when(
+        new ResultHandlerFactory<String>().when(
           s -> responseHandler.handle(succeededFuture(
             PostLoanStorageLoansAnonymizeByUserIdResponse.withNoContent())),
           serverErrorResponder::withError));
