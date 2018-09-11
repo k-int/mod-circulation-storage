@@ -181,64 +181,55 @@ public class LoansAPI implements LoanStorageResource {
       return;
     }
 
-    try {
-      PostgresClient postgresClient =
-        PostgresClient.getInstance(
-          vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
+    final ServerErrorResponder serverErrorResponder =
+      new ServerErrorResponder(PostLoanStorageLoansResponse
+        ::withPlainInternalServerError, responseHandler, log);
 
-      vertxContext.runOnContext(v -> {
-        try {
+    final VertxContextRunner runner = new VertxContextRunner(
+      vertxContext, serverErrorResponder::withError);
 
-          if(loan.getId() == null) {
-            loan.setId(UUID.randomUUID().toString());
-          }
+    runner.runOnContext(() -> {
+      PostgresClient postgresClient = PostgresClient.getInstance(
+        vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
 
-          postgresClient.save(LOAN_TABLE, loan.getId(), loan,
-            reply -> {
-              try {
-                if(reply.succeeded()) {
-                  OutStream stream = new OutStream();
-                  stream.setData(loan);
+      if(loan.getId() == null) {
+        loan.setId(UUID.randomUUID().toString());
+      }
 
-                  responseHandler.handle(
-                    succeededFuture(
-                      LoanStorageResource.PostLoanStorageLoansResponse
-                        .withJsonCreated(reply.result(), stream)));
-                }
-                else {
-                  if(isMultipleOpenLoanError(reply)) {
-                    responseHandler.handle(
-                      succeededFuture(LoanStorageResource.PostLoanStorageLoansResponse
-                      .withJsonUnprocessableEntity(moreThanOneOpenLoanError(loan))));
-                  }
-                  else {
-                    responseHandler.handle(
-                      succeededFuture(
-                        LoanStorageResource.PostLoanStorageLoansResponse
-                          .withPlainInternalServerError(reply.cause().toString())));
-                  }
-                }
-              } catch (Exception e) {
-                log.error(e);
+      postgresClient.save(LOAN_TABLE, loan.getId(), loan,
+        reply -> {
+          try {
+            if(reply.succeeded()) {
+              OutStream stream = new OutStream();
+              stream.setData(loan);
+
+              responseHandler.handle(
+                succeededFuture(
+                  LoanStorageResource.PostLoanStorageLoansResponse
+                    .withJsonCreated(reply.result(), stream)));
+            }
+            else {
+              if(isMultipleOpenLoanError(reply)) {
+                responseHandler.handle(
+                  succeededFuture(LoanStorageResource.PostLoanStorageLoansResponse
+                  .withJsonUnprocessableEntity(moreThanOneOpenLoanError(loan))));
+              }
+              else {
                 responseHandler.handle(
                   succeededFuture(
                     LoanStorageResource.PostLoanStorageLoansResponse
-                      .withPlainInternalServerError(e.getMessage())));
+                      .withPlainInternalServerError(reply.cause().toString())));
               }
-            });
-        } catch (Exception e) {
-          log.error(e);
-          responseHandler.handle(succeededFuture(
-            LoanStorageResource.PostLoanStorageLoansResponse
-              .withPlainInternalServerError(e.getMessage())));
-        }
-      });
-    } catch (Exception e) {
-      log.error(e);
-      responseHandler.handle(succeededFuture(
-        LoanStorageResource.PostLoanStorageLoansResponse
-          .withPlainInternalServerError(e.getMessage())));
-    }
+            }
+          } catch (Exception e) {
+            log.error(e);
+            responseHandler.handle(
+              succeededFuture(
+                LoanStorageResource.PostLoanStorageLoansResponse
+                  .withPlainInternalServerError(e.getMessage())));
+          }
+        });
+    });
   }
 
   @Override
