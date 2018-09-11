@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.core.Response;
@@ -86,8 +87,7 @@ public class LoansAPI implements LoanStorageResource {
       postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.loan",
         tenantId, MODULE_NAME),
         new ResultHandlerFactory().when(
-          s -> responseHandler.handle(succeededFuture(
-            DeleteLoanStorageLoansResponse.withNoContent())),
+          s -> respond(responseHandler, DeleteLoanStorageLoansResponse::withNoContent),
           serverErrorResponder::withError));
     });
   }
@@ -758,4 +758,10 @@ public class LoansAPI implements LoanStorageResource {
     return anonymizeLoansActionHistorySql + "; " + anonymizeLoansSql;
   }
 
+  private void respond(
+    Handler<AsyncResult<Response>> responseHandler,
+    Supplier<Response> responseSupplier) {
+
+    responseHandler.handle(succeededFuture(responseSupplier.get()));
+  }
 }
