@@ -11,7 +11,6 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.core.Response;
@@ -33,6 +32,7 @@ import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.OutStream;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
+import org.folio.support.Responder;
 import org.folio.support.ResultHandlerFactory;
 import org.folio.support.ServerErrorResponder;
 import org.folio.support.UUIDValidation;
@@ -80,6 +80,8 @@ public class LoansAPI implements LoanStorageResource {
     final VertxContextRunner runner = new VertxContextRunner(
       vertxContext, serverErrorResponder::withError);
 
+    final Responder noContentResponder = new Responder();
+
     runner.runOnContext(() -> {
       PostgresClient postgresClient = PostgresClient.getInstance(
         vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
@@ -87,7 +89,8 @@ public class LoansAPI implements LoanStorageResource {
       postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.loan",
         tenantId, MODULE_NAME),
         new ResultHandlerFactory().when(
-          s -> respond(responseHandler, DeleteLoanStorageLoansResponse::withNoContent),
+          s -> noContentResponder.respond(
+            responseHandler, DeleteLoanStorageLoansResponse::withNoContent),
           serverErrorResponder::withError));
     });
   }
@@ -758,10 +761,4 @@ public class LoansAPI implements LoanStorageResource {
     return anonymizeLoansActionHistorySql + "; " + anonymizeLoansSql;
   }
 
-  private void respond(
-    Handler<AsyncResult<Response>> responseHandler,
-    Supplier<Response> responseSupplier) {
-
-    responseHandler.handle(succeededFuture(responseSupplier.get()));
-  }
 }
