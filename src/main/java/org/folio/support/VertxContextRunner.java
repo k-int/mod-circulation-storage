@@ -16,7 +16,7 @@ public class VertxContextRunner {
     this.onError = onError;
   }
 
-  public void runOnContext(Runnable runnable) {
+  public void runOnContext(ThrowingRunnable runnable) {
     this.vertxContext.runOnContext(v -> {
       try {
         runnable.run();
