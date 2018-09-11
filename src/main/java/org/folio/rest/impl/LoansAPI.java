@@ -447,31 +447,27 @@ public class LoansAPI implements LoanStorageResource {
             else {
               try {
                 postgresClient.save(LOAN_TABLE, loan.getId(), loan,
-                  save -> {
-                    try {
-                      if(save.succeeded()) {
-                        OutStream stream = new OutStream();
-                        stream.setData(loan);
+                  new ResultHandlerFactory<String>().when(
+                    r -> {
+                      OutStream stream = new OutStream();
+                      stream.setData(loan);
 
+                      //TODO: Replace with 201 Created response?
+                      responseHandler.handle(succeededFuture(
+                        PutLoanStorageLoansByLoanIdResponse
+                          .withNoContent()));
+                    },
+                    e -> {
+                      if(isMultipleOpenLoanError(e)) {
                         responseHandler.handle(succeededFuture(
-                            PutLoanStorageLoansByLoanIdResponse
-                              .withNoContent()));
+                          LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
+                            .withJsonUnprocessableEntity(
+                              moreThanOneOpenLoanError(loan))));
                       }
                       else {
-                        if(isMultipleOpenLoanError(save)) {
-                          responseHandler.handle(succeededFuture(
-                            LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
-                              .withJsonUnprocessableEntity(
-                                moreThanOneOpenLoanError(loan))));
-                        }
-                        else {
-                          serverErrorResponder.withError(save.cause());
-                        }
+                        serverErrorResponder.withError(e);
                       }
-                    } catch (Exception e) {
-                      serverErrorResponder.withError(e);
-                    }
-                  });
+                    }));
               } catch (Exception e) {
                 serverErrorResponder.withError(e);
               }
