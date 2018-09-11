@@ -49,6 +49,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.sql.UpdateResult;
 
 public class LoansAPI implements LoanStorageResource {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -335,9 +336,11 @@ public class LoansAPI implements LoanStorageResource {
     final VertxContextRunner runner = new VertxContextRunner(
       vertxContext, serverErrorResponder::withError);
 
+    final Responder noContentResponder = new Responder(
+      responseHandler, DeleteLoanStorageLoansByLoanIdResponse::withNoContent);
+
     runner.runOnContext(() -> {
-      PostgresClient postgresClient =
-        PostgresClient.getInstance(
+      PostgresClient postgresClient = PostgresClient.getInstance(
           vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
 
       Criteria a = new Criteria();
@@ -349,19 +352,9 @@ public class LoansAPI implements LoanStorageResource {
       Criterion criterion = new Criterion(a);
 
       postgresClient.delete(LOAN_TABLE, criterion,
-        reply -> {
-          if(reply.succeeded()) {
-            responseHandler.handle(
-              succeededFuture(
-                DeleteLoanStorageLoansByLoanIdResponse
-                  .withNoContent()));
-          }
-          else {
-            responseHandler.handle(succeededFuture(
-              DeleteLoanStorageLoansByLoanIdResponse
-                .withPlainInternalServerError(reply.cause().getMessage())));
-          }
-        });
+        new ResultHandlerFactory<UpdateResult>().when(
+          r -> noContentResponder.respond(),
+          serverErrorResponder::withError));
     });
   }
 
