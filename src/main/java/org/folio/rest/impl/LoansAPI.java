@@ -273,7 +273,14 @@ public class LoansAPI implements LoanStorageResource {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    try {
+    final ServerErrorResponder serverErrorResponder =
+      new ServerErrorResponder(GetLoanStorageLoansByLoanIdResponse
+        ::withPlainInternalServerError, responseHandler, log);
+
+    final VertxContextRunner runner = new VertxContextRunner(
+      vertxContext, serverErrorResponder::withError);
+
+    runner.runOnContext(() -> {
       PostgresClient postgresClient = PostgresClient.getInstance(
         vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
 
@@ -285,56 +292,42 @@ public class LoansAPI implements LoanStorageResource {
 
       Criterion criterion = new Criterion(a);
 
-      vertxContext.runOnContext(v -> {
-        try {
-          postgresClient.get(LOAN_TABLE, LOAN_CLASS, criterion, true, false,
-            reply -> {
-              try {
-                if (reply.succeeded()) {
-                  @SuppressWarnings("unchecked")
-                  List<Loan> loans = (List<Loan>) reply.result().getResults();
+      postgresClient.get(LOAN_TABLE, LOAN_CLASS, criterion, true, false,
+        reply -> {
+          try {
+            if (reply.succeeded()) {
+              @SuppressWarnings("unchecked")
+              List<Loan> loans = (List<Loan>) reply.result().getResults();
 
-                  if (loans.size() == 1) {
-                    Loan loan = loans.get(0);
+              if (loans.size() == 1) {
+                Loan loan = loans.get(0);
 
-                    responseHandler.handle(
-                      succeededFuture(
-                        LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
-                          withJsonOK(loan)));
-                  }
-                  else {
-                    responseHandler.handle(
-                      succeededFuture(
-                        LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
-                          withPlainNotFound("Not Found")));
-                  }
-                } else {
-                  responseHandler.handle(
-                    succeededFuture(
-                      LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
-                        withPlainInternalServerError(reply.cause().getMessage())));
-
-                }
-              } catch (Exception e) {
-                log.error(e);
-                responseHandler.handle(succeededFuture(
-                  LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
-                    withPlainInternalServerError(e.getMessage())));
+                responseHandler.handle(
+                  succeededFuture(
+                    LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
+                      withJsonOK(loan)));
               }
-            });
-        } catch (Exception e) {
-          log.error(e);
-          responseHandler.handle(succeededFuture(
-            LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
-              withPlainInternalServerError(e.getMessage())));
-        }
-      });
-    } catch (Exception e) {
-      log.error(e);
-      responseHandler.handle(succeededFuture(
-        LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
-          withPlainInternalServerError(e.getMessage())));
-    }
+              else {
+                responseHandler.handle(
+                  succeededFuture(
+                    LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
+                      withPlainNotFound("Not Found")));
+              }
+            } else {
+              responseHandler.handle(
+                succeededFuture(
+                  LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
+                    withPlainInternalServerError(reply.cause().getMessage())));
+
+            }
+          } catch (Exception e) {
+            log.error(e);
+            responseHandler.handle(succeededFuture(
+              LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
+                withPlainInternalServerError(e.getMessage())));
+          }
+        });
+    });
   }
 
   @Override
