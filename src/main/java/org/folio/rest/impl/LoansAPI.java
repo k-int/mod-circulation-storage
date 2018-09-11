@@ -293,40 +293,28 @@ public class LoansAPI implements LoanStorageResource {
       Criterion criterion = new Criterion(a);
 
       postgresClient.get(LOAN_TABLE, LOAN_CLASS, criterion, true, false,
-        reply -> {
-          try {
-            if (reply.succeeded()) {
-              @SuppressWarnings("unchecked")
-              List<Loan> loans = (List<Loan>) reply.result().getResults();
+        new ResultHandlerFactory<Results>().when(
+          results -> {
+            @SuppressWarnings("unchecked")
+            List<Loan> loans = (List<Loan>) results.getResults();
 
-              if (loans.size() == 1) {
-                Loan loan = loans.get(0);
+            if (loans.size() == 1) {
+              Loan loan = loans.get(0);
 
-                responseHandler.handle(
-                  succeededFuture(
-                    LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
-                      withJsonOK(loan)));
-              }
-              else {
-                responseHandler.handle(
-                  succeededFuture(
-                    LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
-                      withPlainNotFound("Not Found")));
-              }
-            } else {
               responseHandler.handle(
                 succeededFuture(
                   LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
-                    withPlainInternalServerError(reply.cause().getMessage())));
-
+                    withJsonOK(loan)));
             }
-          } catch (Exception e) {
-            log.error(e);
-            responseHandler.handle(succeededFuture(
-              LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
-                withPlainInternalServerError(e.getMessage())));
-          }
-        });
+            else {
+              responseHandler.handle(
+                succeededFuture(
+                  LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
+                    withPlainNotFound("Not Found")));
+            }
+          },
+          serverErrorResponder::withError
+        ));
     });
   }
 
