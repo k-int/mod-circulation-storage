@@ -419,35 +419,27 @@ public class LoansAPI implements LoanStorageResource {
 
             if (loanList.size() == 1) {
               try {
-                postgresClient.update(LOAN_TABLE, loan, criterion,
-                  true,
-                  update -> {
-                    try {
-                      if(update.succeeded()) {
-                        OutStream stream = new OutStream();
-                        stream.setData(loan);
+                postgresClient.update(LOAN_TABLE, loan, criterion, true,
+                new ResultHandlerFactory<UpdateResult>().when(
+                  r -> {
+                    OutStream stream = new OutStream();
+                    stream.setData(loan);
 
-                        responseHandler.handle(
-                          succeededFuture(
-                            PutLoanStorageLoansByLoanIdResponse
-                              .withNoContent()));
-                      }
-                      else {
-                        if(isMultipleOpenLoanError(update)) {
-                          responseHandler.handle(
-                            succeededFuture(
-                              LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
-                              .withJsonUnprocessableEntity(
-                                moreThanOneOpenLoanError(loan))));
-                        }
-                        else {
-                          serverErrorResponder.withError(update.cause());
-                        }
-                      }
-                    } catch (Exception e) {
+                    responseHandler.handle(succeededFuture(
+                      PutLoanStorageLoansByLoanIdResponse
+                        .withNoContent()));
+                  },
+                  e -> {
+                    if(isMultipleOpenLoanError(e)) {
+                      responseHandler.handle(succeededFuture(
+                        LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
+                          .withJsonUnprocessableEntity(
+                            moreThanOneOpenLoanError(loan))));
+                    }
+                    else {
                       serverErrorResponder.withError(e);
                     }
-                  });
+                  }));
               } catch (Exception e) {
                 serverErrorResponder.withError(e);
               }
