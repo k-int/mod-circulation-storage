@@ -85,8 +85,10 @@ public class LoansAPI implements LoanStorageResource {
 
       postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.loan",
         tenantId, MODULE_NAME),
-        reply -> responseHandler.handle(succeededFuture(
-          DeleteLoanStorageLoansResponse.withNoContent())));
+        new ResultHandlerFactory().when(
+          s -> responseHandler.handle(succeededFuture(
+            DeleteLoanStorageLoansResponse.withNoContent())),
+          serverErrorResponder::withError));
     });
   }
 
