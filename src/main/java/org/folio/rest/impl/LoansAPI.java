@@ -468,89 +468,89 @@ public class LoansAPI implements LoanStorageResource {
 
   @Validate
   @Override
-  public void getLoanStorageLoanHistory(int offset, int limit, String query, String lang,
-      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> responseHandler,
-      Context vertxContext) {
+  public void getLoanStorageLoanHistory(
+    int offset,
+    int limit,
+    String query,
+    String lang,
+    Map<String, String> okapiHeaders,
+    Handler<AsyncResult<Response>> responseHandler,
+    Context vertxContext) {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    try {
-      vertxContext.runOnContext(v -> {
-        try {
-          PostgresClient postgresClient = PostgresClient.getInstance(
-            vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
+    final ServerErrorResponder serverErrorResponder =
+      new ServerErrorResponder(GetLoanStorageLoanHistoryResponse
+        ::withPlainInternalServerError, responseHandler, log);
 
-          String[] fieldList = {"*"};
-          CQLWrapper cql = null;
-          String adjustedQuery = null;
-          CQL2PgJSON cql2pgJson = new CQL2PgJSON(LOAN_HISTORY_TABLE+".jsonb");
-          if(query != null){
-            //a bit of a hack, assume that <space>sortBy<space>
-            //is a sort request that is received as part of the cql , and hence pass
-            //the cql as is. If no sorting is requested, sort by created_date column
-            //in the loan history table which represents the date the entry was created
-            //aka the date an action was made on the loan
-            if(!query.contains(" sortBy ")){
-              cql = new CQLWrapper(cql2pgJson, query);
-              adjustedQuery = cql.toString() + " order by created_date desc ";
-              adjustedQuery = adjustedQuery + new Limit(limit).toString() + " " +new Offset(offset).toString();
-            } else{
-              cql = new CQLWrapper(cql2pgJson, query)
-                  .setLimit(new Limit(limit))
-                  .setOffset(new Offset(offset));
-              adjustedQuery = cql.toString();
-            }
+    final VertxContextRunner runner = new VertxContextRunner(
+      vertxContext, serverErrorResponder::withError);
 
-            log.debug("CQL Query: " + cql.toString());
+    runner.runOnContext(() -> {
+      PostgresClient postgresClient = PostgresClient.getInstance(
+        vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
 
-          } else {
-            cql = new CQLWrapper(cql2pgJson, query)
-                  .setLimit(new Limit(limit))
-                  .setOffset(new Offset(offset));
-            adjustedQuery = cql.toString();
-          }
+      String[] fieldList = {"*"};
+      CQLWrapper cql = null;
+      String adjustedQuery = null;
 
-          postgresClient.get(LOAN_HISTORY_TABLE, LOAN_CLASS, fieldList, adjustedQuery,
-            true, false, reply -> {
-              try {
-                if(reply.succeeded()) {
-                  @SuppressWarnings("unchecked")
-                  List<Loan> loans = (List<Loan>) reply.result().getResults();
+      CQL2PgJSON cql2pgJson = new CQL2PgJSON(LOAN_HISTORY_TABLE+".jsonb");
 
-                  Loans pagedLoans = new Loans();
-                  pagedLoans.setLoans(loans);
-                  pagedLoans.setTotalRecords(reply.result().getResultInfo().getTotalRecords());
+      if(query != null){
+        //a bit of a hack, assume that <space>sortBy<space>
+        //is a sort request that is received as part of the cql , and hence pass
+        //the cql as is. If no sorting is requested, sort by created_date column
+        //in the loan history table which represents the date the entry was created
+        //aka the date an action was made on the loan
+        if(!query.contains(" sortBy ")) {
+          cql = new CQLWrapper(cql2pgJson, query);
 
-                  responseHandler.handle(succeededFuture(
-                    GetLoanStorageLoanHistoryResponse.
-                      withJsonOK(pagedLoans)));
-                }
-                else {
-                  log.error(reply.cause().getMessage(), reply.cause());
-                  responseHandler.handle(succeededFuture(
-                    GetLoanStorageLoanHistoryResponse.
-                      withPlainInternalServerError(reply.cause().getMessage())));
-                }
-              } catch (Exception e) {
-                log.error(e.getMessage(), e);
-                responseHandler.handle(succeededFuture(
-                  GetLoanStorageLoanHistoryResponse.
-                    withPlainInternalServerError(e.getMessage())));
-              }
-            });
-        } catch (Exception e) {
-          log.error(e.getMessage(), e);
-          responseHandler.handle(succeededFuture(
-            GetLoanStorageLoanHistoryResponse.
-              withPlainInternalServerError(e.getMessage())));
+          adjustedQuery = cql.toString() + " order by created_date desc ";
+
+          adjustedQuery = adjustedQuery
+            + new Limit(limit).toString() + " "
+            + new Offset(offset).toString();
         }
-      });
-    } catch (Exception e) {
-      log.error(e.getMessage(), e);
-      responseHandler.handle(succeededFuture(
-        GetLoanStorageLoanHistoryResponse.
-          withPlainInternalServerError(e.getMessage())));
-    }
+        else {
+          cql = new CQLWrapper(cql2pgJson, query)
+              .setLimit(new Limit(limit))
+              .setOffset(new Offset(offset));
+
+          adjustedQuery = cql.toString();
+        }
+
+        log.debug("CQL Query: " + cql.toString());
+
+      } else {
+        cql = new CQLWrapper(cql2pgJson, query)
+              .setLimit(new Limit(limit))
+              .setOffset(new Offset(offset));
+
+        adjustedQuery = cql.toString();
+      }
+
+      postgresClient.get(LOAN_HISTORY_TABLE, LOAN_CLASS, fieldList, adjustedQuery,
+        true, false, reply -> {
+          try {
+            if(reply.succeeded()) {
+              @SuppressWarnings("unchecked")
+              List<Loan> loans = (List<Loan>) reply.result().getResults();
+
+              Loans pagedLoans = new Loans();
+              pagedLoans.setLoans(loans);
+              pagedLoans.setTotalRecords(reply.result().getResultInfo().getTotalRecords());
+
+              responseHandler.handle(succeededFuture(
+                GetLoanStorageLoanHistoryResponse.withJsonOK(pagedLoans)));
+            }
+            else {
+              serverErrorResponder.withError(reply.cause());
+            }
+          } catch (Exception e) {
+            serverErrorResponder.withError(e);
+          }
+        });
+    });
   }
 
   private ImmutablePair<Boolean, String> validateLoan(Loan loan) {
