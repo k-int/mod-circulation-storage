@@ -80,7 +80,8 @@ public class LoansAPI implements LoanStorageResource {
     final VertxContextRunner runner = new VertxContextRunner(
       vertxContext, serverErrorResponder::withError);
 
-    final Responder noContentResponder = new Responder();
+    final Responder noContentResponder = new Responder(
+      responseHandler, DeleteLoanStorageLoansResponse::withNoContent);
 
     runner.runOnContext(() -> {
       PostgresClient postgresClient = PostgresClient.getInstance(
@@ -89,8 +90,7 @@ public class LoansAPI implements LoanStorageResource {
       postgresClient.mutate(String.format("TRUNCATE TABLE %s_%s.loan",
         tenantId, MODULE_NAME),
         new ResultHandlerFactory().when(
-          s -> noContentResponder.respond(
-            responseHandler, DeleteLoanStorageLoansResponse::withNoContent),
+          s -> noContentResponder.respond(),
           serverErrorResponder::withError));
     });
   }

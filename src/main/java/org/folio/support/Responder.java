@@ -10,10 +10,18 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 
 public class Responder {
-  public void respond(
+  private final Handler<AsyncResult<Response>> responseHandler;
+  private final Supplier<Response> responseSupplier;
+
+  public Responder(
     Handler<AsyncResult<Response>> responseHandler,
     Supplier<Response> responseSupplier) {
 
+    this.responseHandler = responseHandler;
+    this.responseSupplier = responseSupplier;
+  }
+
+  public void respond() {
     responseHandler.handle(succeededFuture(responseSupplier.get()));
   }
 }
