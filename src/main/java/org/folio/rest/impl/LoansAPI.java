@@ -197,38 +197,25 @@ public class LoansAPI implements LoanStorageResource {
       }
 
       postgresClient.save(LOAN_TABLE, loan.getId(), loan,
-        reply -> {
-          try {
-            if(reply.succeeded()) {
-              OutStream stream = new OutStream();
-              stream.setData(loan);
+        new ResultHandlerFactory<String>().when(
+          result -> {
+            OutStream stream = new OutStream();
+            stream.setData(loan);
 
-              responseHandler.handle(
-                succeededFuture(
-                  LoanStorageResource.PostLoanStorageLoansResponse
-                    .withJsonCreated(reply.result(), stream)));
+            responseHandler.handle(succeededFuture(
+              LoanStorageResource.PostLoanStorageLoansResponse
+                .withJsonCreated(result, stream)));
+          },
+          e -> {
+            if(isMultipleOpenLoanError(e)) {
+              responseHandler.handle(succeededFuture(
+                LoanStorageResource.PostLoanStorageLoansResponse
+                  .withJsonUnprocessableEntity(moreThanOneOpenLoanError(loan))));
             }
             else {
-              if(isMultipleOpenLoanError(reply)) {
-                responseHandler.handle(
-                  succeededFuture(LoanStorageResource.PostLoanStorageLoansResponse
-                  .withJsonUnprocessableEntity(moreThanOneOpenLoanError(loan))));
-              }
-              else {
-                responseHandler.handle(
-                  succeededFuture(
-                    LoanStorageResource.PostLoanStorageLoansResponse
-                      .withPlainInternalServerError(reply.cause().toString())));
-              }
+              serverErrorResponder.withError(e);
             }
-          } catch (Exception e) {
-            log.error(e);
-            responseHandler.handle(
-              succeededFuture(
-                LoanStorageResource.PostLoanStorageLoansResponse
-                  .withPlainInternalServerError(e.getMessage())));
-          }
-        });
+          }));
     });
   }
 
@@ -683,8 +670,12 @@ public class LoansAPI implements LoanStorageResource {
   }
 
   private <T> boolean isMultipleOpenLoanError(AsyncResult<T> reply) {
-    return reply.cause() instanceof GenericDatabaseException &&
-      ((GenericDatabaseException) reply.cause()).errorMessage().message()
+    return isMultipleOpenLoanError(reply.cause());
+  }
+
+  private boolean isMultipleOpenLoanError(Throwable cause) {
+    return cause instanceof GenericDatabaseException &&
+      ((GenericDatabaseException) cause).errorMessage().message()
         .contains("loan_itemid_idx_unique");
   }
 
