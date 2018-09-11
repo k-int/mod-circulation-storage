@@ -79,7 +79,7 @@ public class LoansAPI implements LoanStorageResource {
 
     final VertxContextRunner runner = new VertxContextRunner(
       vertxContext, serverErrorResponder::withError);
-    
+
     runner.runOnContext(() -> {
       PostgresClient postgresClient = PostgresClient.getInstance(
         vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
@@ -103,66 +103,59 @@ public class LoansAPI implements LoanStorageResource {
     String query,
     String lang,
     Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
+    Handler<AsyncResult<Response>> responseHandler,
     Context vertxContext) {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
 
-    try {
-      vertxContext.runOnContext(v -> {
-        try {
-          PostgresClient postgresClient = PostgresClient.getInstance(
-            vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
+    final ServerErrorResponder serverErrorResponder =
+      new ServerErrorResponder(GetLoanStorageLoansResponse
+        ::withPlainInternalServerError, responseHandler, log);
 
-          log.info("CQL Query: " + query);
+    final VertxContextRunner runner = new VertxContextRunner(
+      vertxContext, serverErrorResponder::withError);
 
-          String[] fieldList = {"*"};
+    runner.runOnContext(() -> {
+      PostgresClient postgresClient = PostgresClient.getInstance(
+        vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
 
-          CQL2PgJSON cql2pgJson = new CQL2PgJSON("loan.jsonb");
-          CQLWrapper cql = new CQLWrapper(cql2pgJson, query)
-            .setLimit(new Limit(limit))
-            .setOffset(new Offset(offset));
+      log.info("CQL Query: " + query);
 
-          postgresClient.get(LOAN_TABLE, LOAN_CLASS, fieldList, cql,
-            true, false, reply -> {
-              try {
-                if(reply.succeeded()) {
-                  @SuppressWarnings("unchecked")
-                  List<Loan> loans = (List<Loan>) reply.result().getResults();
+      String[] fieldList = {"*"};
 
-                  Loans pagedLoans = new Loans();
-                  pagedLoans.setLoans(loans);
-                  pagedLoans.setTotalRecords(reply.result().getResultInfo().getTotalRecords());
+      CQL2PgJSON cql2pgJson = new CQL2PgJSON("loan.jsonb");
+      CQLWrapper cql = new CQLWrapper(cql2pgJson, query)
+        .setLimit(new Limit(limit))
+        .setOffset(new Offset(offset));
 
-                  asyncResultHandler.handle(succeededFuture(
-                    LoanStorageResource.GetLoanStorageLoansResponse.
-                      withJsonOK(pagedLoans)));
-                }
-                else {
-                  asyncResultHandler.handle(succeededFuture(
-                    LoanStorageResource.GetLoanStorageLoansResponse.
-                      withPlainInternalServerError(reply.cause().getMessage())));
-                }
-              } catch (Exception e) {
-                log.error(e);
-                asyncResultHandler.handle(succeededFuture(
-                  LoanStorageResource.GetLoanStorageLoansResponse.
-                    withPlainInternalServerError(e.getMessage())));
-              }
-            });
-        } catch (Exception e) {
-          log.error(e);
-          asyncResultHandler.handle(succeededFuture(
-            LoanStorageResource.GetLoanStorageLoansResponse.
-              withPlainInternalServerError(e.getMessage())));
-        }
-      });
-    } catch (Exception e) {
-      log.error(e);
-      asyncResultHandler.handle(succeededFuture(
-        LoanStorageResource.GetLoanStorageLoansResponse.
-          withPlainInternalServerError(e.getMessage())));
-    }
+      postgresClient.get(LOAN_TABLE, LOAN_CLASS, fieldList, cql,
+        true, false, reply -> {
+          try {
+            if(reply.succeeded()) {
+              @SuppressWarnings("unchecked")
+              List<Loan> loans = (List<Loan>) reply.result().getResults();
+
+              Loans pagedLoans = new Loans();
+              pagedLoans.setLoans(loans);
+              pagedLoans.setTotalRecords(reply.result().getResultInfo().getTotalRecords());
+
+              responseHandler.handle(succeededFuture(
+                LoanStorageResource.GetLoanStorageLoansResponse.
+                  withJsonOK(pagedLoans)));
+            }
+            else {
+              responseHandler.handle(succeededFuture(
+                LoanStorageResource.GetLoanStorageLoansResponse.
+                  withPlainInternalServerError(reply.cause().getMessage())));
+            }
+          } catch (Exception e) {
+            log.error(e);
+            responseHandler.handle(succeededFuture(
+              LoanStorageResource.GetLoanStorageLoansResponse.
+                withPlainInternalServerError(e.getMessage())));
+          }
+        });
+    });
   }
 
   @Override
@@ -170,7 +163,7 @@ public class LoansAPI implements LoanStorageResource {
     String lang,
     Loan loan,
     Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
+    Handler<AsyncResult<Response>> responseHandler,
     Context vertxContext) {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
@@ -180,7 +173,7 @@ public class LoansAPI implements LoanStorageResource {
     }
 
     if(isOpenAndHasNoUserId(loan)) {
-      respondWithError(asyncResultHandler,
+      respondWithError(responseHandler,
         PostLoanStorageLoansResponse::withJsonUnprocessableEntity,
         "Open loan must have a user ID");
       return;
@@ -190,7 +183,7 @@ public class LoansAPI implements LoanStorageResource {
     ImmutablePair<Boolean, String> validationResult = validateLoan(loan);
 
     if(!validationResult.getLeft()) {
-      asyncResultHandler.handle(
+      responseHandler.handle(
         succeededFuture(
           LoanStorageResource.PostLoanStorageLoansResponse
             .withPlainBadRequest(
@@ -218,19 +211,19 @@ public class LoansAPI implements LoanStorageResource {
                   OutStream stream = new OutStream();
                   stream.setData(loan);
 
-                  asyncResultHandler.handle(
+                  responseHandler.handle(
                     succeededFuture(
                       LoanStorageResource.PostLoanStorageLoansResponse
                         .withJsonCreated(reply.result(), stream)));
                 }
                 else {
                   if(isMultipleOpenLoanError(reply)) {
-                    asyncResultHandler.handle(
+                    responseHandler.handle(
                       succeededFuture(LoanStorageResource.PostLoanStorageLoansResponse
                       .withJsonUnprocessableEntity(moreThanOneOpenLoanError(loan))));
                   }
                   else {
-                    asyncResultHandler.handle(
+                    responseHandler.handle(
                       succeededFuture(
                         LoanStorageResource.PostLoanStorageLoansResponse
                           .withPlainInternalServerError(reply.cause().toString())));
@@ -238,7 +231,7 @@ public class LoansAPI implements LoanStorageResource {
                 }
               } catch (Exception e) {
                 log.error(e);
-                asyncResultHandler.handle(
+                responseHandler.handle(
                   succeededFuture(
                     LoanStorageResource.PostLoanStorageLoansResponse
                       .withPlainInternalServerError(e.getMessage())));
@@ -246,14 +239,14 @@ public class LoansAPI implements LoanStorageResource {
             });
         } catch (Exception e) {
           log.error(e);
-          asyncResultHandler.handle(succeededFuture(
+          responseHandler.handle(succeededFuture(
             LoanStorageResource.PostLoanStorageLoansResponse
               .withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
       log.error(e);
-      asyncResultHandler.handle(succeededFuture(
+      responseHandler.handle(succeededFuture(
         LoanStorageResource.PostLoanStorageLoansResponse
           .withPlainInternalServerError(e.getMessage())));
     }
@@ -308,7 +301,7 @@ public class LoansAPI implements LoanStorageResource {
     String loanId,
     String lang,
     Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
+    Handler<AsyncResult<Response>> responseHandler,
     Context vertxContext) {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
@@ -337,19 +330,19 @@ public class LoansAPI implements LoanStorageResource {
                   if (loans.size() == 1) {
                     Loan loan = loans.get(0);
 
-                    asyncResultHandler.handle(
+                    responseHandler.handle(
                       succeededFuture(
                         LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
                           withJsonOK(loan)));
                   }
                   else {
-                    asyncResultHandler.handle(
+                    responseHandler.handle(
                       succeededFuture(
                         LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
                           withPlainNotFound("Not Found")));
                   }
                 } else {
-                  asyncResultHandler.handle(
+                  responseHandler.handle(
                     succeededFuture(
                       LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
                         withPlainInternalServerError(reply.cause().getMessage())));
@@ -357,21 +350,21 @@ public class LoansAPI implements LoanStorageResource {
                 }
               } catch (Exception e) {
                 log.error(e);
-                asyncResultHandler.handle(succeededFuture(
+                responseHandler.handle(succeededFuture(
                   LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
                     withPlainInternalServerError(e.getMessage())));
               }
             });
         } catch (Exception e) {
           log.error(e);
-          asyncResultHandler.handle(succeededFuture(
+          responseHandler.handle(succeededFuture(
             LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
               withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
       log.error(e);
-      asyncResultHandler.handle(succeededFuture(
+      responseHandler.handle(succeededFuture(
         LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
           withPlainInternalServerError(e.getMessage())));
     }
@@ -382,7 +375,7 @@ public class LoansAPI implements LoanStorageResource {
     String loanId,
     String lang,
     Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
+    Handler<AsyncResult<Response>> responseHandler,
     Context vertxContext) {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
@@ -405,25 +398,25 @@ public class LoansAPI implements LoanStorageResource {
           postgresClient.delete(LOAN_TABLE, criterion,
             reply -> {
               if(reply.succeeded()) {
-                asyncResultHandler.handle(
+                responseHandler.handle(
                   succeededFuture(
                     DeleteLoanStorageLoansByLoanIdResponse
                       .withNoContent()));
               }
               else {
-                asyncResultHandler.handle(succeededFuture(
+                responseHandler.handle(succeededFuture(
                   DeleteLoanStorageLoansByLoanIdResponse
                     .withPlainInternalServerError(reply.cause().getMessage())));
               }
             });
         } catch (Exception e) {
-          asyncResultHandler.handle(succeededFuture(
+          responseHandler.handle(succeededFuture(
             DeleteLoanStorageLoansByLoanIdResponse
               .withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
-      asyncResultHandler.handle(succeededFuture(
+      responseHandler.handle(succeededFuture(
         DeleteLoanStorageLoansByLoanIdResponse
           .withPlainInternalServerError(e.getMessage())));
     }
@@ -435,7 +428,7 @@ public class LoansAPI implements LoanStorageResource {
     String lang,
     Loan loan,
     Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
+    Handler<AsyncResult<Response>> responseHandler,
     Context vertxContext) {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
@@ -447,7 +440,7 @@ public class LoansAPI implements LoanStorageResource {
     ImmutablePair<Boolean, String> validationResult = validateLoan(loan);
 
     if(!validationResult.getLeft()) {
-      asyncResultHandler.handle(
+      responseHandler.handle(
         succeededFuture(
           LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
             .withPlainBadRequest(
@@ -457,7 +450,7 @@ public class LoansAPI implements LoanStorageResource {
     }
 
     if(isOpenAndHasNoUserId(loan)) {
-      respondWithError(asyncResultHandler,
+      respondWithError(responseHandler,
         PutLoanStorageLoansByLoanIdResponse::withJsonUnprocessableEntity,
         "Open loan must have a user ID");
       return;
@@ -494,35 +487,35 @@ public class LoansAPI implements LoanStorageResource {
                             OutStream stream = new OutStream();
                             stream.setData(loan);
 
-                            asyncResultHandler.handle(
+                            responseHandler.handle(
                               succeededFuture(
                                 PutLoanStorageLoansByLoanIdResponse
                                   .withNoContent()));
                           }
                           else {
                             if(isMultipleOpenLoanError(update)) {
-                              asyncResultHandler.handle(
+                              responseHandler.handle(
                                 succeededFuture(
                                   LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
                                   .withJsonUnprocessableEntity(
                                     moreThanOneOpenLoanError(loan))));
                             }
                             else {
-                              asyncResultHandler.handle(
+                              responseHandler.handle(
                                 succeededFuture(
                                   LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
                                     .withPlainInternalServerError(update.cause().toString())));
                             }
                           }
                         } catch (Exception e) {
-                          asyncResultHandler.handle(
+                          responseHandler.handle(
                             succeededFuture(
                               PutLoanStorageLoansByLoanIdResponse
                                 .withPlainInternalServerError(e.getMessage())));
                         }
                       });
                   } catch (Exception e) {
-                    asyncResultHandler.handle(succeededFuture(
+                    responseHandler.handle(succeededFuture(
                       PutLoanStorageLoansByLoanIdResponse
                         .withPlainInternalServerError(e.getMessage())));
                   }
@@ -536,53 +529,53 @@ public class LoansAPI implements LoanStorageResource {
                             OutStream stream = new OutStream();
                             stream.setData(loan);
 
-                            asyncResultHandler.handle(
+                            responseHandler.handle(
                               succeededFuture(
                                 PutLoanStorageLoansByLoanIdResponse
                                   .withNoContent()));
                           }
                           else {
                             if(isMultipleOpenLoanError(save)) {
-                              asyncResultHandler.handle(
+                              responseHandler.handle(
                                 succeededFuture(
                                   LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
                                   .withJsonUnprocessableEntity(
                                     moreThanOneOpenLoanError(loan))));
                             }
                             else {
-                              asyncResultHandler.handle(
+                              responseHandler.handle(
                                 succeededFuture(
                                   LoanStorageResource.PostLoanStorageLoansResponse
                                     .withPlainInternalServerError(save.cause().toString())));
                             }
                           }
                         } catch (Exception e) {
-                          asyncResultHandler.handle(
+                          responseHandler.handle(
                             succeededFuture(
                               PutLoanStorageLoansByLoanIdResponse
                                 .withPlainInternalServerError(e.getMessage())));
                         }
                       });
                   } catch (Exception e) {
-                    asyncResultHandler.handle(succeededFuture(
+                    responseHandler.handle(succeededFuture(
                       PutLoanStorageLoansByLoanIdResponse
                         .withPlainInternalServerError(e.getMessage())));
                   }
                 }
               } else {
-                asyncResultHandler.handle(succeededFuture(
+                responseHandler.handle(succeededFuture(
                   PutLoanStorageLoansByLoanIdResponse
                     .withPlainInternalServerError(reply.cause().getMessage())));
               }
             });
         } catch (Exception e) {
-          asyncResultHandler.handle(succeededFuture(
+          responseHandler.handle(succeededFuture(
             PutLoanStorageLoansByLoanIdResponse
               .withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
-      asyncResultHandler.handle(succeededFuture(
+      responseHandler.handle(succeededFuture(
         PutLoanStorageLoansByLoanIdResponse
           .withPlainInternalServerError(e.getMessage())));
     }
@@ -619,7 +612,7 @@ public class LoansAPI implements LoanStorageResource {
   @Validate
   @Override
   public void getLoanStorageLoanHistory(int offset, int limit, String query, String lang,
-      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
+      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> responseHandler,
       Context vertxContext) {
 
     String tenantId = okapiHeaders.get(TENANT_HEADER);
@@ -671,33 +664,33 @@ public class LoansAPI implements LoanStorageResource {
                   pagedLoans.setLoans(loans);
                   pagedLoans.setTotalRecords(reply.result().getResultInfo().getTotalRecords());
 
-                  asyncResultHandler.handle(succeededFuture(
+                  responseHandler.handle(succeededFuture(
                     GetLoanStorageLoanHistoryResponse.
                       withJsonOK(pagedLoans)));
                 }
                 else {
                   log.error(reply.cause().getMessage(), reply.cause());
-                  asyncResultHandler.handle(succeededFuture(
+                  responseHandler.handle(succeededFuture(
                     GetLoanStorageLoanHistoryResponse.
                       withPlainInternalServerError(reply.cause().getMessage())));
                 }
               } catch (Exception e) {
                 log.error(e.getMessage(), e);
-                asyncResultHandler.handle(succeededFuture(
+                responseHandler.handle(succeededFuture(
                   GetLoanStorageLoanHistoryResponse.
                     withPlainInternalServerError(e.getMessage())));
               }
             });
         } catch (Exception e) {
           log.error(e.getMessage(), e);
-          asyncResultHandler.handle(succeededFuture(
+          responseHandler.handle(succeededFuture(
             GetLoanStorageLoanHistoryResponse.
               withPlainInternalServerError(e.getMessage())));
         }
       });
     } catch (Exception e) {
       log.error(e.getMessage(), e);
-      asyncResultHandler.handle(succeededFuture(
+      responseHandler.handle(succeededFuture(
         GetLoanStorageLoanHistoryResponse.
           withPlainInternalServerError(e.getMessage())));
     }
@@ -721,7 +714,7 @@ public class LoansAPI implements LoanStorageResource {
   }
 
   private void respondWithError(
-    Handler<AsyncResult<Response>> asyncResultHandler,
+    Handler<AsyncResult<Response>> responseHandler,
     Function<Errors, Response> responseCreator,
     String message) {
 
@@ -732,7 +725,7 @@ public class LoansAPI implements LoanStorageResource {
     final Errors errors = new Errors()
       .withErrors(errorsList);
 
-    asyncResultHandler.handle(succeededFuture(
+    responseHandler.handle(succeededFuture(
       responseCreator.apply(errors)));
   }
 
