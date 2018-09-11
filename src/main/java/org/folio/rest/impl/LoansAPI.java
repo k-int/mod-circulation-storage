@@ -335,13 +335,7 @@ public class LoansAPI implements LoanStorageResource {
       PostgresClient postgresClient = PostgresClient.getInstance(
           vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
 
-      Criteria a = new Criteria();
-
-      a.addField("'id'");
-      a.setOperation("=");
-      a.setValue(loanId);
-
-      Criterion criterion = new Criterion(a);
+      Criterion criterion = identityCriterionFor(loanId);
 
       postgresClient.delete(LOAN_TABLE, criterion,
         new ResultHandlerFactory<UpdateResult>().when(
@@ -392,13 +386,7 @@ public class LoansAPI implements LoanStorageResource {
       PostgresClient postgresClient = PostgresClient.getInstance(
           vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
 
-      Criteria a = new Criteria();
-
-      a.addField("'id'");
-      a.setOperation("=");
-      a.setValue(loanId);
-
-      Criterion criterion = new Criterion(a);
+      Criterion criterion = identityCriterionFor(loanId);
 
       getLoanById(loanId, postgresClient,
         new ResultHandlerFactory<Results>().when(
@@ -630,15 +618,19 @@ public class LoansAPI implements LoanStorageResource {
     PostgresClient postgresClient,
     Handler<AsyncResult<Results>> resultHandler) {
 
+    Criterion criterion = identityCriterionFor(loanId);
+
+    postgresClient.get(LOAN_TABLE, LOAN_CLASS, criterion, true, false,
+      resultHandler);
+  }
+
+  private Criterion identityCriterionFor(String id) {
     Criteria a = new Criteria();
 
     a.addField("'id'");
     a.setOperation("=");
-    a.setValue(loanId);
+    a.setValue(id);
 
-    Criterion criterion = new Criterion(a);
-
-    postgresClient.get(LOAN_TABLE, LOAN_CLASS, criterion, true, false,
-      resultHandler);
+    return new Criterion(a);
   }
 }
