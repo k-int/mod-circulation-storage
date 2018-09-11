@@ -376,12 +376,9 @@ public class LoansAPI implements LoanStorageResource {
     ImmutablePair<Boolean, String> validationResult = validateLoan(loan);
 
     if(!validationResult.getLeft()) {
-      responseHandler.handle(
-        succeededFuture(
-          LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
-            .withPlainBadRequest(
-              validationResult.getRight())));
-
+      responseHandler.handle(succeededFuture(
+        PutLoanStorageLoansByLoanIdResponse
+          .withPlainBadRequest(validationResult.getRight())));
       return;
     }
 
@@ -418,8 +415,7 @@ public class LoansAPI implements LoanStorageResource {
             List<Loan> loanList = (List<Loan>) results.getResults();
 
             if (loanList.size() == 1) {
-              try {
-                postgresClient.update(LOAN_TABLE, loan, criterion, true,
+              postgresClient.update(LOAN_TABLE, loan, criterion, true,
                 new ResultHandlerFactory<UpdateResult>().when(
                   r -> {
                     OutStream stream = new OutStream();
@@ -432,7 +428,7 @@ public class LoansAPI implements LoanStorageResource {
                   e -> {
                     if(isMultipleOpenLoanError(e)) {
                       responseHandler.handle(succeededFuture(
-                        LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
+                        PutLoanStorageLoansByLoanIdResponse
                           .withJsonUnprocessableEntity(
                             moreThanOneOpenLoanError(loan))));
                     }
@@ -440,39 +436,31 @@ public class LoansAPI implements LoanStorageResource {
                       serverErrorResponder.withError(e);
                     }
                   }));
-              } catch (Exception e) {
-                serverErrorResponder.withError(e);
-              }
             }
             else {
-              try {
-                postgresClient.save(LOAN_TABLE, loan.getId(), loan,
-                  new ResultHandlerFactory<String>().when(
-                    r -> {
-                      OutStream stream = new OutStream();
-                      stream.setData(loan);
+              postgresClient.save(LOAN_TABLE, loan.getId(), loan,
+                new ResultHandlerFactory<String>().when(
+                  r -> {
+                    OutStream stream = new OutStream();
+                    stream.setData(loan);
 
-                      //TODO: Replace with 201 Created response?
+                    //TODO: Replace with 201 Created response?
+                    responseHandler.handle(succeededFuture(
+                      PutLoanStorageLoansByLoanIdResponse
+                        .withNoContent()));
+                  },
+                  e -> {
+                    if(isMultipleOpenLoanError(e)) {
                       responseHandler.handle(succeededFuture(
                         PutLoanStorageLoansByLoanIdResponse
-                          .withNoContent()));
-                    },
-                    e -> {
-                      if(isMultipleOpenLoanError(e)) {
-                        responseHandler.handle(succeededFuture(
-                          LoanStorageResource.PutLoanStorageLoansByLoanIdResponse
-                            .withJsonUnprocessableEntity(
-                              moreThanOneOpenLoanError(loan))));
-                      }
-                      else {
-                        serverErrorResponder.withError(e);
-                      }
-                    }));
-              } catch (Exception e) {
-                serverErrorResponder.withError(e);
-              }
+                          .withJsonUnprocessableEntity(
+                            moreThanOneOpenLoanError(loan))));
+                    }
+                    else {
+                      serverErrorResponder.withError(e);
+                    }
+                  }));
             }
-
           },
         serverErrorResponder::withError));
     });
