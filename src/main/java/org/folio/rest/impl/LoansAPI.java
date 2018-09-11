@@ -281,19 +281,12 @@ public class LoansAPI implements LoanStorageResource {
     final VertxContextRunner runner = new VertxContextRunner(
       vertxContext, serverErrorResponder::withError);
 
-    runner.runOnContext(() -> {
-      PostgresClient postgresClient = PostgresClient.getInstance(
+    runner.runOnContext(() ->
+    {
+      final PostgresClient postgresClient = PostgresClient.getInstance(
         vertxContext.owner(), TenantTool.calculateTenantId(tenantId));
 
-      Criteria a = new Criteria();
-
-      a.addField("'id'");
-      a.setOperation("=");
-      a.setValue(loanId);
-
-      Criterion criterion = new Criterion(a);
-
-      postgresClient.get(LOAN_TABLE, LOAN_CLASS, criterion, true, false,
+      getLoanById(loanId, postgresClient,
         new ResultHandlerFactory<Results>().when(
           results -> {
             @SuppressWarnings("unchecked")
@@ -304,18 +297,17 @@ public class LoansAPI implements LoanStorageResource {
 
               responseHandler.handle(
                 succeededFuture(
-                  LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
+                  GetLoanStorageLoansByLoanIdResponse.
                     withJsonOK(loan)));
-            }
-            else {
+            } else {
               responseHandler.handle(
                 succeededFuture(
-                  LoanStorageResource.GetLoanStorageLoansByLoanIdResponse.
+                  GetLoanStorageLoansByLoanIdResponse.
                     withPlainNotFound("Not Found")));
             }
           },
-          serverErrorResponder::withError
-        ));
+        serverErrorResponder::withError
+      ));
     });
   }
 
@@ -408,7 +400,7 @@ public class LoansAPI implements LoanStorageResource {
 
       Criterion criterion = new Criterion(a);
 
-      postgresClient.get(LOAN_TABLE, LOAN_CLASS, criterion, true, false,
+      getLoanById(loanId, postgresClient,
         new ResultHandlerFactory<Results>().when(
           results -> {
             @SuppressWarnings("unchecked")
@@ -633,4 +625,20 @@ public class LoansAPI implements LoanStorageResource {
     return anonymizeLoansActionHistorySql + "; " + anonymizeLoansSql;
   }
 
+  private void getLoanById(
+    String loanId,
+    PostgresClient postgresClient,
+    Handler<AsyncResult<Results>> resultHandler) {
+
+    Criteria a = new Criteria();
+
+    a.addField("'id'");
+    a.setOperation("=");
+    a.setValue(loanId);
+
+    Criterion criterion = new Criterion(a);
+
+    postgresClient.get(LOAN_TABLE, LOAN_CLASS, criterion, true, false,
+      resultHandler);
+  }
 }
